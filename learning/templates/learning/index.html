@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><title>LinguaBot Backend</title>
+<style>
+body{font:16px/1.5 Arial,sans-serif;max-width:960px;margin:32px auto;padding:0 24px;color:#20252b}h1{margin-bottom:4px}h2{margin-top:28px;font-size:21px}a{color:#1958a6}table{border-collapse:collapse;width:100%}td,th{border:1px solid #d9dfe5;padding:9px 12px;text-align:left}th{background:#f0f3f6}code{font-size:14px}small{color:#555}li{margin-bottom:5px}
+</style></head><body>
+<h1>LinguaBot Backend</h1>
+<p>Неделя 1 · Django + Django REST Framework + SQLite</p>
+<p>Техническая страница проекта. Учебный интерфейс на React разрабатывается отдельно.</p>
+<p><a href="/api/v1/health/">Проверка сервера</a> · <a href="/api/v1/scenarios/">Сценарии из базы</a> · <a href="/api/docs/">Документация API</a> · <a href="/api/schema/">OpenAPI</a></p>
+<h2>Что реализовано</h2>
+<ul><li>Запускаемый сервер и проверка соединения с базой.</li><li>Модели данных и начальная миграция SQLite.</li><li>Справочник разговорных сценариев и API для его чтения.</li><li>Черновой контракт API для согласования с React-разработчиком.</li><li>Отдельная команда проверки Apimira без публикации ключа.</li></ul>
+<h2>Таблицы приложения в SQLite</h2>
+<table><tr><th>Таблица</th><th>Состояние</th></tr>{% for table in tables %}<tr><td><code>{{ table }}</code></td><td>Создана миграцией</td></tr>{% empty %}<tr><td colspan="2">Сначала выполните migrate</td></tr>{% endfor %}</table>
+<h2>Сценарии из SQLite</h2>
+<table><tr><th>Название</th><th>Содержание</th></tr>{% for item in scenarios %}<tr><td>{{ item.title }}</td><td>{{ item.description }}</td></tr>{% empty %}<tr><td colspan="2">Выполните seed_scenarios</td></tr>{% endfor %}</table>
+{% if probe %}<h2>Последняя проверка Apimira</h2>
+<p>HTTP {{ probe.http_status }} · модель <code>{{ probe.model }}</code> · ответ <strong>{{ probe.reply }}</strong></p>
+<p>Токены по данным провайдера: вход {{ probe.usage.prompt_tokens }}, выход {{ probe.usage.completion_tokens }}, всего {{ probe.usage.total_tokens }}.</p>
+<p>Запрошенный лимит: {{ probe.requested_limit }}. Подтверждён по usage: {{ probe.limit_verified|yesno:"да,нет" }}.</p>
+<small>Сохранённый результат {{ probe.checked_at }}. Открытие страницы не вызывает ИИ и не расходует токены.</small>{% endif %}
+<h2>Граница первой недели</h2>
+<p>Регистрация, вход, профиль, диалоги, упражнения и статистика пока возвращают <code>501 not_implemented</code>. Это зафиксированные контракты следующих недель, а не готовые функции. Справочник сценариев не является работающим ИИ-чатом.</p>
+</body></html>

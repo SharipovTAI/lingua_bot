@@ -1,0 +1,320 @@
+openapi: 3.0.3
+info:
+  title: LinguaBot Backend — неделя 1
+  version: 0.1.0
+  description: 'Работают health и каталог сценариев. Остальные операции — черновой
+    контракт: возвращают 501. Авторизация будет реализована на неделе 2.'
+paths:
+  /api/v1/auth/login/:
+    post:
+      operationId: v1_auth_login_create
+      tags:
+      - Неделя 2 — контракт
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegistrationInput'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RegistrationInput'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RegistrationInput'
+        required: true
+      security:
+      - {}
+      responses:
+        '501':
+          description: Операция запланирована, бизнес-логика ещё не реализована
+  /api/v1/auth/register/:
+    post:
+      operationId: v1_auth_register_create
+      tags:
+      - Неделя 2 — контракт
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegistrationInput'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RegistrationInput'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RegistrationInput'
+        required: true
+      security:
+      - {}
+      responses:
+        '501':
+          description: Операция запланирована, бизнес-логика ещё не реализована
+  /api/v1/conversations/:
+    get:
+      operationId: v1_conversations_retrieve
+      tags:
+      - Неделя 2 — контракт
+      security:
+      - {}
+      responses:
+        '501':
+          description: Операция запланирована, бизнес-логика ещё не реализована
+    post:
+      operationId: v1_conversations_create
+      tags:
+      - Неделя 2 — контракт
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConversationInput'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ConversationInput'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ConversationInput'
+        required: true
+      security:
+      - {}
+      responses:
+        '501':
+          description: Операция запланирована, бизнес-логика ещё не реализована
+  /api/v1/conversations/{conversation_id}/messages/:
+    get:
+      operationId: v1_conversations_messages_retrieve
+      parameters:
+      - in: path
+        name: conversation_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Неделя 2 — контракт
+      security:
+      - {}
+      responses:
+        '501':
+          description: Операция запланирована, бизнес-логика ещё не реализована
+    post:
+      operationId: v1_conversations_messages_create
+      parameters:
+      - in: path
+        name: conversation_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Неделя 3 — контракт
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MessageInput'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MessageInput'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MessageInput'
+        required: true
+      security:
+      - {}
+      responses:
+        '501':
+          description: Операция запланирована, бизнес-логика ещё не реализована
+  /api/v1/exercises/:
+    get:
+      operationId: v1_exercises_retrieve
+      tags:
+      - Неделя 4 — контракт
+      security:
+      - {}
+      responses:
+        '501':
+          description: Операция запланирована, бизнес-логика ещё не реализована
+  /api/v1/exercises/{exercise_id}/attempts/:
+    post:
+      operationId: v1_exercises_attempts_create
+      parameters:
+      - in: path
+        name: exercise_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Неделя 4 — контракт
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AttemptInput'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AttemptInput'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AttemptInput'
+        required: true
+      security:
+      - {}
+      responses:
+        '501':
+          description: Операция запланирована, бизнес-логика ещё не реализована
+  /api/v1/health/:
+    get:
+      operationId: v1_health_retrieve
+      tags:
+      - Готово — неделя 1
+      security:
+      - {}
+      responses:
+        '200':
+          description: Сервер и база отвечают
+        '503':
+          description: База недоступна
+  /api/v1/profile/:
+    get:
+      operationId: v1_profile_retrieve
+      tags:
+      - Неделя 2 — контракт
+      security:
+      - {}
+      responses:
+        '501':
+          description: Операция запланирована, бизнес-логика ещё не реализована
+    patch:
+      operationId: v1_profile_partial_update
+      tags:
+      - Неделя 2 — контракт
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProfileData'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProfileData'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProfileData'
+      security:
+      - {}
+      responses:
+        '501':
+          description: Операция запланирована, бизнес-логика ещё не реализована
+  /api/v1/scenarios/:
+    get:
+      operationId: v1_scenarios_list
+      summary: Получить справочник сценариев из SQLite
+      tags:
+      - Готово — неделя 1
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Scenario'
+          description: ''
+  /api/v1/statistics/:
+    get:
+      operationId: v1_statistics_retrieve
+      tags:
+      - Неделя 4 — контракт
+      security:
+      - {}
+      responses:
+        '501':
+          description: Операция запланирована, бизнес-логика ещё не реализована
+components:
+  schemas:
+    AttemptInput:
+      type: object
+      properties:
+        answer:
+          type: string
+          maxLength: 2000
+      required:
+      - answer
+    ConversationInput:
+      type: object
+      properties:
+        scenario_id:
+          type: integer
+          minimum: 1
+      required:
+      - scenario_id
+    LanguageEnum:
+      enum:
+      - en
+      type: string
+      description: '* `en` - en'
+    LevelEnum:
+      enum:
+      - A1
+      - A2
+      - B1
+      - B2
+      - C1
+      type: string
+      description: |-
+        * `A1` - A1
+        * `A2` - A2
+        * `B1` - B1
+        * `B2` - B2
+        * `C1` - C1
+    MessageInput:
+      type: object
+      properties:
+        content:
+          type: string
+          maxLength: 2000
+      required:
+      - content
+    PatchedProfileData:
+      type: object
+      properties:
+        level:
+          $ref: '#/components/schemas/LevelEnum'
+        goal:
+          type: string
+          maxLength: 200
+        language:
+          $ref: '#/components/schemas/LanguageEnum'
+    RegistrationInput:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          writeOnly: true
+          minLength: 8
+      required:
+      - email
+      - password
+    Scenario:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        slug:
+          type: string
+          maxLength: 50
+          pattern: ^[-a-zA-Z0-9_]+$
+        title:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+      required:
+      - description
+      - id
+      - slug
+      - title
