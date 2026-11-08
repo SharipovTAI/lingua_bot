@@ -1,37 +1,54 @@
 openapi: 3.0.3
 info:
-  title: LinguaBot Backend — неделя 1
-  version: 0.1.0
-  description: 'Работают health и каталог сценариев. Остальные операции — черновой
-    контракт: возвращают 501. Авторизация будет реализована на неделе 2.'
+  title: LinguaBot Backend — неделя 2
+  version: 0.2.0
+  description: 'Работают регистрация, вход, профиль, диалоги и сохранение сообщений.
+    Для доступа: Authorization: Token <token>. Ответы ИИ относятся к неделе 3; упражнения
+    и статистика — к неделе 4.'
 paths:
   /api/v1/auth/login/:
     post:
       operationId: v1_auth_login_create
       tags:
-      - Неделя 2 — контракт
+      - Авторизация
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RegistrationInput'
+              $ref: '#/components/schemas/LoginInput'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/RegistrationInput'
+              $ref: '#/components/schemas/LoginInput'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/RegistrationInput'
+              $ref: '#/components/schemas/LoginInput'
         required: true
       security:
       - {}
       responses:
-        '501':
-          description: Операция запланирована, бизнес-логика ещё не реализована
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResult'
+          description: ''
+        '401':
+          description: Неверный email или пароль
+  /api/v1/auth/logout/:
+    post:
+      operationId: v1_auth_logout_create
+      tags:
+      - Авторизация
+      security:
+      - tokenAuth: []
+      responses:
+        '204':
+          description: Токен отозван
   /api/v1/auth/register/:
     post:
       operationId: v1_auth_register_create
       tags:
-      - Неделя 2 — контракт
+      - Авторизация
       requestBody:
         content:
           application/json:
@@ -47,42 +64,80 @@ paths:
       security:
       - {}
       responses:
-        '501':
-          description: Операция запланирована, бизнес-логика ещё не реализована
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistrationResult'
+          description: ''
+        '400':
+          description: Ошибка проверки email или пароля
   /api/v1/conversations/:
     get:
-      operationId: v1_conversations_retrieve
+      operationId: v1_conversations_list
       tags:
-      - Неделя 2 — контракт
+      - Диалоги
       security:
-      - {}
+      - tokenAuth: []
       responses:
-        '501':
-          description: Операция запланирована, бизнес-логика ещё не реализована
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ConversationData'
+          description: ''
     post:
       operationId: v1_conversations_create
       tags:
-      - Неделя 2 — контракт
+      - Диалоги
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ConversationInput'
+              $ref: '#/components/schemas/ConversationData'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/ConversationInput'
+              $ref: '#/components/schemas/ConversationData'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/ConversationInput'
+              $ref: '#/components/schemas/ConversationData'
         required: true
       security:
-      - {}
+      - tokenAuth: []
       responses:
-        '501':
-          description: Операция запланирована, бизнес-логика ещё не реализована
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationData'
+          description: ''
+  /api/v1/conversations/{conversation_id}/:
+    get:
+      operationId: v1_conversations_retrieve
+      parameters:
+      - in: path
+        name: conversation_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Диалоги
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationData'
+          description: ''
+        '404':
+          description: Диалог не найден или принадлежит другому пользователю
   /api/v1/conversations/{conversation_id}/messages/:
     get:
-      operationId: v1_conversations_messages_retrieve
+      operationId: v1_conversations_messages_list
       parameters:
       - in: path
         name: conversation_id
@@ -90,14 +145,21 @@ paths:
           type: integer
         required: true
       tags:
-      - Неделя 2 — контракт
+      - Сообщения
       security:
-      - {}
+      - tokenAuth: []
       responses:
-        '501':
-          description: Операция запланирована, бизнес-логика ещё не реализована
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MessageData'
+          description: ''
     post:
       operationId: v1_conversations_messages_create
+      summary: Сохранить сообщение пользователя без вызова ИИ
       parameters:
       - in: path
         name: conversation_id
@@ -105,7 +167,7 @@ paths:
           type: integer
         required: true
       tags:
-      - Неделя 3 — контракт
+      - Сообщения
       requestBody:
         content:
           application/json:
@@ -119,17 +181,21 @@ paths:
               $ref: '#/components/schemas/MessageInput'
         required: true
       security:
-      - {}
+      - tokenAuth: []
       responses:
-        '501':
-          description: Операция запланирована, бизнес-логика ещё не реализована
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResult'
+          description: ''
   /api/v1/exercises/:
     get:
       operationId: v1_exercises_retrieve
       tags:
       - Неделя 4 — контракт
       security:
-      - {}
+      - tokenAuth: []
       responses:
         '501':
           description: Операция запланирована, бизнес-логика ещё не реализована
@@ -157,7 +223,7 @@ paths:
               $ref: '#/components/schemas/AttemptInput'
         required: true
       security:
-      - {}
+      - tokenAuth: []
       responses:
         '501':
           description: Операция запланирована, бизнес-логика ещё не реализована
@@ -177,16 +243,20 @@ paths:
     get:
       operationId: v1_profile_retrieve
       tags:
-      - Неделя 2 — контракт
+      - Профиль
       security:
-      - {}
+      - tokenAuth: []
       responses:
-        '501':
-          description: Операция запланирована, бизнес-логика ещё не реализована
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileData'
+          description: ''
     patch:
       operationId: v1_profile_partial_update
       tags:
-      - Неделя 2 — контракт
+      - Профиль
       requestBody:
         content:
           application/json:
@@ -199,10 +269,14 @@ paths:
             schema:
               $ref: '#/components/schemas/PatchedProfileData'
       security:
-      - {}
+      - tokenAuth: []
       responses:
-        '501':
-          description: Операция запланирована, бизнес-логика ещё не реализована
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileData'
+          description: ''
   /api/v1/scenarios/:
     get:
       operationId: v1_scenarios_list
@@ -226,7 +300,7 @@ paths:
       tags:
       - Неделя 4 — контракт
       security:
-      - {}
+      - tokenAuth: []
       responses:
         '501':
           description: Операция запланирована, бизнес-логика ещё не реализована
@@ -240,14 +314,26 @@ components:
           maxLength: 2000
       required:
       - answer
-    ConversationInput:
+    ConversationData:
       type: object
       properties:
+        id:
+          type: integer
+          readOnly: true
         scenario_id:
           type: integer
-          minimum: 1
+        scenario_title:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
       required:
+      - created_at
+      - id
       - scenario_id
+      - scenario_title
     LanguageEnum:
       enum:
       - en
@@ -267,6 +353,55 @@ components:
         * `B1` - B1
         * `B2` - B2
         * `C1` - C1
+    LoginInput:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 150
+        password:
+          type: string
+          writeOnly: true
+          maxLength: 128
+      required:
+      - email
+      - password
+    LoginResult:
+      type: object
+      properties:
+        token:
+          type: string
+        user:
+          $ref: '#/components/schemas/UserData'
+      required:
+      - token
+      - user
+    MessageData:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        role:
+          allOf:
+          - $ref: '#/components/schemas/RoleEnum'
+          readOnly: true
+        content:
+          type: string
+          readOnly: true
+        feedback:
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - content
+      - created_at
+      - feedback
+      - id
+      - role
     MessageInput:
       type: object
       properties:
@@ -275,7 +410,35 @@ components:
           maxLength: 2000
       required:
       - content
+    MessageResult:
+      type: object
+      properties:
+        user_message:
+          $ref: '#/components/schemas/MessageData'
+        assistant_message:
+          allOf:
+          - $ref: '#/components/schemas/MessageData'
+          nullable: true
+        feedback:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+      required:
+      - assistant_message
+      - feedback
+      - user_message
     PatchedProfileData:
+      type: object
+      properties:
+        level:
+          $ref: '#/components/schemas/LevelEnum'
+        goal:
+          type: string
+          maxLength: 200
+        language:
+          $ref: '#/components/schemas/LanguageEnum'
+    ProfileData:
       type: object
       properties:
         level:
@@ -291,13 +454,29 @@ components:
         email:
           type: string
           format: email
+          maxLength: 150
         password:
           type: string
           writeOnly: true
-          minLength: 8
+          maxLength: 128
       required:
       - email
       - password
+    RegistrationResult:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/UserData'
+      required:
+      - user
+    RoleEnum:
+      enum:
+      - user
+      - assistant
+      type: string
+      description: |-
+        * `user` - user
+        * `assistant` - assistant
     Scenario:
       type: object
       properties:
@@ -318,3 +497,22 @@ components:
       - id
       - slug
       - title
+    UserData:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        email:
+          type: string
+          format: email
+          title: Адрес электронной почты
+          maxLength: 254
+      required:
+      - id
+  securitySchemes:
+    tokenAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: Token-based authentication with required prefix "Token"

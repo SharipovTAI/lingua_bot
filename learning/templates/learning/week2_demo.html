@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><title>LinguaBot — проверка API недели 2</title>
+<style>
+body{font:16px/1.5 Arial,sans-serif;max-width:1050px;margin:28px auto;padding:0 20px;color:#20252b}h1{margin-bottom:4px}h2{font-size:20px}section{border-top:1px solid #ddd;padding:14px 0}label{display:inline-block;margin:4px 14px 4px 0}input,select,button{font:inherit;padding:6px}input[type=email]{width:270px}input[type=password]{width:220px}button{cursor:pointer;margin:5px 8px 5px 0}pre{background:#f3f5f7;padding:12px;white-space:pre-wrap;overflow-wrap:anywhere;font:14px/1.45 Consolas,monospace;min-height:30px}a{color:#1958a6}.note{color:#555}#goal{width:450px}#message{width:580px}#conversation{width:90px}
+</style></head><body>
+<h1>LinguaBot — проверка API недели 2</h1>
+<p class="note">Локальная страница для проверки бэкенда. Это не интерфейс React. Все кнопки вызывают настоящий API; токены в выводе скрыты.</p>
+<p><a href="/api/docs/">Swagger</a> · <a href="/">Состояние проекта</a> · <strong id="session">Вход не выполнен</strong></p>
+<section id="auth-section"><h2>1 Регистрация и вход</h2>
+<label>Email <input id="email" type="email" autocomplete="off"></label>
+<label>Пароль <input id="password" type="password" autocomplete="off"></label><br>
+<button id="register">Зарегистрироваться</button><button id="login">Войти</button><button id="logout">Выйти</button>
+<pre id="auth-output">Запрос ещё не выполнен</pre></section>
+<section id="profile-section"><h2>2 Профиль пользователя</h2>
+<label>Уровень <select id="level"><option>A1</option><option>A2</option><option>B1</option><option>B2</option><option>C1</option></select></label>
+<label>Цель <input id="goal" maxlength="200"></label><br>
+<button id="get-profile">Получить профиль</button><button id="save-profile">Сохранить профиль</button>
+<pre id="profile-output">Запрос ещё не выполнен</pre></section>
+<section id="chat-section"><h2>3 Диалоги и история</h2>
+<label>Сценарий <select id="scenario"></select></label>
+<button id="create-chat">Создать диалог</button><button id="get-chats">Мои диалоги</button><br>
+<label>Номер диалога <input id="conversation" type="number" min="1"></label><br>
+<label>Сообщение <input id="message" maxlength="2000"></label><br>
+<button id="send-message">Сохранить сообщение</button><button id="get-history">Загрузить историю</button>
+<pre id="chat-output">Запрос ещё не выполнен</pre>
+<p class="note">На второй неделе сохраняются сообщения пользователя. Ответ ИИ и исправления появятся на третьей неделе; платный API здесь не вызывается.</p></section>
+<script>
+let token = '';
+const el = id => document.getElementById(id);
+function safe(value) {
+  if (Array.isArray(value)) return value.map(safe);
+  if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([k,v]) => [k, k === 'token' ? 'получен и скрыт' : safe(v)]));
+  return value;
+}
+async function call(path, method, body, output) {
+  const headers = {'Content-Type':'application/json'};
+  if (token) headers.Authorization = 'Token ' + token;
+  try {
+    const response = await fetch('/api/v1' + path, {method, headers, ...(body === undefined ? {} : {body:JSON.stringify(body)})});
+    const data = response.status === 204 ? null : await response.json();
+    el(output).textContent = method + ' /api/v1' + path + '\nHTTP ' + response.status + '\n' + JSON.stringify(safe(data), null, 2);
+    return {ok:response.ok, data};
+  } catch (_) {
+    el(output).textContent = 'Не удалось выполнить запрос. Проверьте соединение с сервером.';
+    return {ok:false};
+  }
+}
+const credentials = () => ({email:el('email').value, password:el('password').value});
+el('register').onclick = () => call('/auth/register/', 'POST', credentials(), 'auth-output');
+el('login').onclick = async () => {
+  const result = await call('/auth/login/', 'POST', credentials(), 'auth-output');
+  if (result.ok) { token = result.data.token; el('session').textContent = 'Вход: ' + result.data.user.email; }
+};
+el('logout').onclick = async () => {
+  const result = await call('/auth/logout/', 'POST', undefined, 'auth-output');
+  if (result.ok) { token = ''; el('session').textContent = 'Вход не выполнен'; }
+};
+el('get-profile').onclick = async () => {
+  const result = await call('/profile/', 'GET', undefined, 'profile-output');
+  if (result.ok) { el('level').value = result.data.level; el('goal').value = result.data.goal; }
+};
+el('save-profile').onclick = () => call('/profile/', 'PATCH', {level:el('level').value, goal:el('goal').value, language:'en'}, 'profile-output');
+el('create-chat').onclick = async () => {
+  const result = await call('/conversations/', 'POST', {scenario_id:Number(el('scenario').value)}, 'chat-output');
+  if (result.ok) el('conversation').value = result.data.id;
+};
+el('get-chats').onclick = () => call('/conversations/', 'GET', undefined, 'chat-output');
+el('send-message').onclick = () => call('/conversations/' + el('conversation').value + '/messages/', 'POST', {content:el('message').value}, 'chat-output');
+el('get-history').onclick = () => call('/conversations/' + el('conversation').value + '/messages/', 'GET', undefined, 'chat-output');
+fetch('/api/v1/scenarios/').then(r=>r.json()).then(items=>items.forEach(s=>el('scenario').add(new Option(s.title,s.id)))).catch(()=>{el('chat-output').textContent='Не удалось загрузить сценарии.';});
+</script></body></html>

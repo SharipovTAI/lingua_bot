@@ -27,15 +27,15 @@ class BackendTests(TestCase):
         self.assertEqual(len(response.json()), 5)
         self.assertIn('Изменено в базе', [item['title'] for item in response.json()])
 
-    def test_draft_does_not_register_or_issue_token(self):
-        response = self.client.post('/api/v1/auth/register/', {'email': 'test@example.com', 'password': 'password123'})
-        self.assertEqual(response.status_code, 501)
+    def test_weak_registration_does_not_create_user(self):
+        response = self.client.post('/api/v1/auth/register/', {'email': 'test@example.com', 'password': '123'})
+        self.assertEqual(response.status_code, 400)
         self.assertEqual(User.objects.count(), 0)
 
     def test_draft_message_does_not_call_paid_api(self):
         with patch('learning.services.requests.post') as upstream:
             response = self.client.post('/api/v1/conversations/1/messages/', {'content': 'Hello'})
-        self.assertEqual(response.status_code, 501)
+        self.assertEqual(response.status_code, 401)
         upstream.assert_not_called()
 
     def test_related_records_are_removed_with_user(self):

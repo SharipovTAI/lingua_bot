@@ -4,11 +4,12 @@
 body{font:16px/1.5 Arial,sans-serif;max-width:960px;margin:32px auto;padding:0 24px;color:#20252b}h1{margin-bottom:4px}h2{margin-top:28px;font-size:21px}a{color:#1958a6}table{border-collapse:collapse;width:100%}td,th{border:1px solid #d9dfe5;padding:9px 12px;text-align:left}th{background:#f0f3f6}code{font-size:14px}small{color:#555}li{margin-bottom:5px}
 </style></head><body>
 <h1>LinguaBot Backend</h1>
-<p>Неделя 1 · Django + Django REST Framework + SQLite</p>
+<p>Неделя 2 · Django + Django REST Framework + SQLite</p>
 <p>Техническая страница проекта. Учебный интерфейс на React разрабатывается отдельно.</p>
 <p><a href="/api/v1/health/">Проверка сервера</a> · <a href="/api/v1/scenarios/">Сценарии из базы</a> · <a href="/api/docs/">Документация API</a> · <a href="/api/schema/">OpenAPI</a></p>
+<p><a href="/dev/week2/">Проверка регистрации, профиля и истории диалогов</a> (локально, при DEBUG=true)</p>
 <h2>Что реализовано</h2>
-<ul><li>Запускаемый сервер и проверка соединения с базой.</li><li>Модели данных и начальная миграция SQLite.</li><li>Справочник разговорных сценариев и API для его чтения.</li><li>Черновой контракт API для согласования с React-разработчиком.</li><li>Отдельная команда проверки Apimira без публикации ключа.</li></ul>
+<ul><li>Регистрация по email и хранение пароля в виде хеша Django.</li><li>Вход по токену и выход с отзывом токена.</li><li>Профиль с уровнем и целью изучения английского языка.</li><li>Создание диалогов, сохранение сообщений и получение истории из SQLite.</li><li>Доступ только к своим диалогам; документация API для React.</li></ul>
 <h2>Таблицы приложения в SQLite</h2>
 <table><tr><th>Таблица</th><th>Состояние</th></tr>{% for table in tables %}<tr><td><code>{{ table }}</code></td><td>Создана миграцией</td></tr>{% empty %}<tr><td colspan="2">Сначала выполните migrate</td></tr>{% endfor %}</table>
 <h2>Сценарии из SQLite</h2>
@@ -18,6 +19,6 @@ body{font:16px/1.5 Arial,sans-serif;max-width:960px;margin:32px auto;padding:0 2
 <p>Токены по данным провайдера: вход {{ probe.usage.prompt_tokens }}, выход {{ probe.usage.completion_tokens }}, всего {{ probe.usage.total_tokens }}.</p>
 <p>Запрошенный лимит: {{ probe.requested_limit }}. Подтверждён по usage: {{ probe.limit_verified|yesno:"да,нет" }}.</p>
 <small>Сохранённый результат {{ probe.checked_at }}. Открытие страницы не вызывает ИИ и не расходует токены.</small>{% endif %}
-<h2>Граница первой недели</h2>
-<p>Регистрация, вход, профиль, диалоги, упражнения и статистика пока возвращают <code>501 not_implemented</code>. Это зафиксированные контракты следующих недель, а не готовые функции. Справочник сценариев не является работающим ИИ-чатом.</p>
+<h2>Граница второй недели</h2>
+<p>Сообщения сохраняются без ответов ИИ. Упражнения и статистика остаются заглушками HTTP 501 для авторизованного пользователя. Проверка Apimira выше — сохранённый результат первой недели, а не новый платный запрос.</p>
 </body></html>
