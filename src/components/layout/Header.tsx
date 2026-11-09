@@ -1,10 +1,15 @@
 import { Bell, ChevronDown, Flame, Menu, UserRound } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { useAuth } from '../../auth/AuthContext'
 
 type HeaderProps = {
   onMenu: () => void
 }
 
 export function Header({ onMenu }: HeaderProps) {
+  const { user, profile } = useAuth()
+  const name = user?.email.split('@')[0] ?? 'Пользователь'
+
   return (
     <header className="topbar">
       <button className="menu-btn" type="button" onClick={onMenu} aria-label="Меню">
@@ -34,16 +39,16 @@ export function Header({ onMenu }: HeaderProps) {
         <Bell size={16} />
       </button>
 
-      <button className="chip user-chip" type="button">
+      <Link className="chip user-chip" to="/settings">
         <span className="avatar">
           <UserRound size={16} />
         </span>
         <span className="user-meta">
-          Пользователь
-          <small>Уровень: A2</small>
+          {name}
+          <small>Уровень: {profile?.level ?? 'A1'}</small>
         </span>
         <ChevronDown size={14} color="#7a8c89" />
-      </button>
+      </Link>
     </header>
   )
 }

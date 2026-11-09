@@ -88,9 +88,9 @@ export function DashboardPage() {
               <Send size={16} />
             </button>
           </form>
-          <a className="hint-link" href="#hint">
-            Нужна подсказка?
-          </a>
+          <Link className="hint-link" to="/practice">
+            Открыть полный чат
+          </Link>
         </article>
 
         <div className="stack">

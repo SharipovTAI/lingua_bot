@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Outlet } from 'react-router-dom'
+import { isLocalApi } from '../../api/client'
 import { Header } from './Header'
 import { Sidebar } from './Sidebar'
 
@@ -18,6 +19,11 @@ export function AppLayout() {
       <div className="workspace">
         <Header onMenu={() => setMenuOpen(true)} />
         <main className="content">
+          {isLocalApi ? (
+            <p className="local-mode">
+              Локальный режим: профиль и сообщения хранятся в браузере. Запросы к Django те же, что в main.
+            </p>
+          ) : null}
           <Outlet />
         </main>
       </div>

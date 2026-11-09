@@ -38,7 +38,7 @@ export const settingsItem: NavItem = {
 export const pageCopy: Record<string, { title: string; text: string }> = {
   '/practice': {
     title: 'Разговорная практика',
-    text: 'Диалоги с ботом по темам. Здесь появится полный экран чата и выбор сценария.',
+    text: 'Диалоги по сценариям: история сообщений читается из базы, ответ ИИ появится позже.',
   },
   '/lesson': {
     title: 'Ежедневный урок',
@@ -66,6 +66,6 @@ export const pageCopy: Record<string, { title: string; text: string }> = {
   },
   '/settings': {
     title: 'Настройки',
-    text: 'Профиль, язык интерфейса и уведомления. Каркас настроек подключен.',
+    text: 'Профиль: уровень английского и цель обучения.',
   },
 }
