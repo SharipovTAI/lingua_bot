@@ -1013,3 +1013,13 @@ button {
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+.chat-correction {
+  margin-top: 8px;
+  padding: 8px 12px;
+  border-left: 3px solid #218779;
+  background: #edf7f4;
+  color: #263456;
+  border-radius: 4px;
+  overflow-wrap: anywhere;
+}

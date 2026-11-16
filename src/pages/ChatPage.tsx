@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { MessageCircle, Plus, Send } from 'lucide-react'
-import { api } from '../api/client'
+import { api, isLocalApi } from '../api/client'
 import { ApiError } from '../api/types'
 import type { ChatMessage, Conversation, Scenario } from '../api/types'
 
@@ -16,6 +16,15 @@ function formatTime(iso: string) {
   })
 }
 
+function correctionsFor(message: ChatMessage) {
+  const rows = message.feedback?.corrections
+  if (message.role !== 'assistant' || !Array.isArray(rows)) return []
+  return rows.filter((row): row is { original: string; corrected: string; explanation: string } =>
+    row !== null && typeof row === 'object' && typeof row.original === 'string' &&
+    typeof row.corrected === 'string' && typeof row.explanation === 'string',
+  )
+}
+
 export function ChatPage() {
   const [scenarios, setScenarios] = useState<Scenario[]>([])
   const [conversations, setConversations] = useState<Conversation[]>([])
@@ -26,6 +35,7 @@ export function ChatPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
+  const [switching, setSwitching] = useState(false)
   const endRef = useRef<HTMLDivElement>(null)
 
   const active = useMemo(
@@ -33,33 +43,30 @@ export function ChatPage() {
     [conversations, activeId],
   )
 
-  async function loadWorkspace() {
-    setError('')
-    setLoading(true)
-    try {
-      const [nextScenarios, nextConversations] = await Promise.all([
-        api.scenarios(),
-        api.conversations(),
-      ])
-      setScenarios(nextScenarios)
-      setConversations(nextConversations)
-      setScenarioId(nextScenarios[0]?.id ?? '')
-      const first = nextConversations[0]
-      setActiveId(first?.id ?? null)
-      if (first) {
-        setMessages(await api.history(first.id))
-      } else {
-        setMessages([])
-      }
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Не удалось загрузить чат.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
   useEffect(() => {
+    let cancelled = false
+    async function loadWorkspace() {
+      try {
+        const [nextScenarios, nextConversations] = await Promise.all([
+          api.scenarios(),
+          api.conversations(),
+        ])
+        const first = nextConversations[0]
+        const history = first ? await api.history(first.id) : []
+        if (cancelled) return
+        setScenarios(nextScenarios)
+        setConversations(nextConversations)
+        setScenarioId(nextScenarios[0]?.id ?? '')
+        setActiveId(first?.id ?? null)
+        setMessages(history)
+      } catch (err) {
+        if (!cancelled) setError(err instanceof ApiError ? err.message : 'Не удалось загрузить чат.')
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
     void loadWorkspace()
+    return () => { cancelled = true }
   }, [])
 
   useEffect(() => {
@@ -67,18 +74,24 @@ export function ChatPage() {
   }, [messages])
 
   async function openConversation(id: number) {
-    setActiveId(id)
+    if (sending || switching || loading) return
+    setSwitching(true)
     setError('')
     try {
-      setMessages(await api.history(id))
+      const history = await api.history(id)
+      setActiveId(id)
+      setMessages(history)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Не удалось загрузить историю.')
+    } finally {
+      setSwitching(false)
     }
   }
 
   async function startConversation(event: FormEvent) {
     event.preventDefault()
-    if (scenarioId === '') return
+    if (scenarioId === '' || sending || switching || loading) return
+    setSwitching(true)
     setError('')
     try {
       const created = await api.createConversation(scenarioId)
@@ -87,12 +100,14 @@ export function ChatPage() {
       setMessages([])
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Не удалось создать диалог.')
+    } finally {
+      setSwitching(false)
     }
   }
 
   async function sendMessage(event: FormEvent) {
     event.preventDefault()
-    if (!activeId || !draft.trim()) return
+    if (!activeId || !draft.trim() || sending || switching || loading) return
     setSending(true)
     setError('')
     try {
@@ -116,6 +131,7 @@ export function ChatPage() {
         <h2>Диалоги</h2>
         <form className="new-chat" onSubmit={startConversation}>
           <select
+            disabled={loading || sending || switching}
             value={scenarioId}
             onChange={(event) => setScenarioId(event.target.value ? Number(event.target.value) : '')}
             aria-label="Сценарий"
@@ -127,7 +143,7 @@ export function ChatPage() {
               </option>
             ))}
           </select>
-          <button className="btn-primary compact" type="submit" disabled={scenarioId === ''}>
+          <button className="btn-primary compact" type="submit" disabled={scenarioId === '' || sending || switching || loading}>
             <Plus size={16} />
             Новый
           </button>
@@ -140,6 +156,7 @@ export function ChatPage() {
               type="button"
               className={`conversation-item${item.id === activeId ? ' active' : ''}`}
               onClick={() => void openConversation(item.id)}
+              disabled={sending || switching || loading}
             >
               <strong>{item.scenario_title}</strong>
               <span>{formatTime(item.created_at)}</span>
@@ -177,26 +194,34 @@ export function ChatPage() {
               ) : null}
               <div>
                 <div className="bubble">{message.content}</div>
+                {correctionsFor(message).map((item, index) => (
+                  <div className="chat-correction" key={index}>
+                    <strong>Подсказка по английскому</strong>
+                    <div><del>{item.original}</del> → <b>{item.corrected}</b></div>
+                    <div>{item.explanation}</div>
+                  </div>
+                ))}
                 <div className="msg-time">{formatTime(message.created_at)}</div>
               </div>
             </div>
           ))}
           {!loading && active && messages.length === 0 ? (
-            <p className="muted">История пуста. Сообщения ученика сохраняются в базе; ответ ИИ появится на следующей неделе.</p>
+            <p className="muted">{isLocalApi ? 'Режим без сервера: ответы ИИ отключены.' : 'Напишите первую реплику на английском.'}</p>
           ) : null}
           <div ref={endRef} />
         </div>
 
+        {sending && <p className="muted" role="status">ИИ готовит ответ…</p>}
         <form className="composer" onSubmit={sendMessage}>
           <input
             placeholder={active ? 'Напиши сообщение...' : 'Сначала создайте диалог'}
             aria-label="Сообщение"
             value={draft}
             maxLength={2000}
-            disabled={!active || sending}
+            disabled={!active || sending || switching || loading}
             onChange={(event) => setDraft(event.target.value)}
           />
-          <button className="send" type="submit" aria-label="Отправить" disabled={!active || sending || !draft.trim()}>
+          <button className="send" type="submit" aria-label="Отправить" disabled={!active || sending || switching || loading || !draft.trim()}>
             <Send size={16} />
           </button>
         </form>
