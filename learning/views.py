@@ -2,7 +2,7 @@ import json
 
 from django.conf import settings
 from django.contrib.auth import authenticate
-from django.db import connection
+from django.db import connection, transaction
 from django.shortcuts import render, get_object_or_404
 from django.http import Http404
 from rest_framework import generics
@@ -14,6 +14,7 @@ from rest_framework.views import APIView
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 
 from .models import Scenario, Profile, Conversation, Message
+from .tutor import TutorError, tutor_reply
 from .serializers import (
     ScenarioSerializer, RegistrationInput, RegistrationResult, LoginInput, LoginResult, UserData,
     ProfileData, ConversationData, MessageData, MessageResult, MessageInput, AttemptInput,
@@ -49,7 +50,7 @@ class HealthView(APIView):
                 cursor.fetchone()
         except Exception:
             return Response({'status': 'error', 'database': 'unavailable'}, status=503)
-        return Response({'status': 'ok', 'service': 'linguabot-backend', 'version': '0.2.0', 'database': 'sqlite', 'stage': 'week-2'})
+        return Response({'status': 'ok', 'service': 'linguabot-backend', 'version': '0.3.0', 'database': 'sqlite', 'stage': 'week-3'})
 
 
 class ScenarioListView(generics.ListAPIView):
@@ -145,18 +146,33 @@ class ConversationDetailView(APIView):
 
 
 class MessagesView(APIView):
+    throttle_classes = [ScopedRateThrottle]
+
+    def get_throttles(self):
+        self.throttle_scope = 'tutor' if self.request.method == 'POST' else None
+        return super().get_throttles()
+
     @extend_schema(tags=['Сообщения'], responses=MessageData(many=True))
     def get(self, request, conversation_id):
         conversation = get_object_or_404(Conversation, id=conversation_id, user=request.user)
         return Response(MessageData(conversation.messages.all(), many=True).data)
 
-    @extend_schema(tags=['Сообщения'], summary='Сохранить сообщение пользователя без вызова ИИ', request=MessageInput, responses={201: MessageResult})
+    @extend_schema(tags=['Сообщения'], summary='Отправить сообщение и получить ответ ИИ с исправлением', request=MessageInput, responses={201: MessageResult, 429: OpenApiResponse(description='Превышена частота отправки'), 502: OpenApiResponse(description='Ошибка ответа ИИ'), 503: OpenApiResponse(description='ИИ недоступен'), 504: OpenApiResponse(description='Истекло время ожидания ИИ')})
     def post(self, request, conversation_id):
-        conversation = get_object_or_404(Conversation, id=conversation_id, user=request.user)
+        conversation = get_object_or_404(Conversation.objects.select_related('scenario'), id=conversation_id, user=request.user)
         serializer = MessageInput(data=request.data)
         serializer.is_valid(raise_exception=True)
-        message = Message.objects.create(conversation=conversation, role='user', content=serializer.validated_data['content'])
-        return Response({'user_message': MessageData(message).data, 'assistant_message': None, 'feedback': []}, status=201)
+        content = serializer.validated_data['content']
+        level = Profile.objects.filter(user=request.user).values_list('level', flat=True).first() or 'A1'
+        history = list(conversation.messages.order_by('-created_at', '-id')[:6])
+        try:
+            reply, corrections = tutor_reply(conversation.scenario, level, reversed(history), content)
+        except TutorError as exc:
+            return Response({'detail': str(exc)}, status=exc.status)
+        with transaction.atomic():
+            message = Message.objects.create(conversation=conversation, role='user', content=content)
+            answer = Message.objects.create(conversation=conversation, role='assistant', content=reply, feedback={'corrections': corrections})
+        return Response({'user_message': MessageData(message).data, 'assistant_message': MessageData(answer).data, 'feedback': corrections}, status=201)
 
 
 class ExercisesDraft(APIView):

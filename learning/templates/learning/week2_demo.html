@@ -23,7 +23,7 @@ body{font:16px/1.5 Arial,sans-serif;max-width:1050px;margin:28px auto;padding:0 
 <label>Сообщение <input id="message" maxlength="2000"></label><br>
 <button id="send-message">Сохранить сообщение</button><button id="get-history">Загрузить историю</button>
 <pre id="chat-output">Запрос ещё не выполнен</pre>
-<p class="note">На второй неделе сохраняются сообщения пользователя. Ответ ИИ и исправления появятся на третьей неделе; платный API здесь не вызывается.</p></section>
+<p class="note">Отправка сообщения вызывает платный API ИИ. Загрузка истории не расходует токены.</p></section>
 <script>
 let token = '';
 const el = id => document.getElementById(id);
@@ -65,7 +65,11 @@ el('create-chat').onclick = async () => {
   if (result.ok) el('conversation').value = result.data.id;
 };
 el('get-chats').onclick = () => call('/conversations/', 'GET', undefined, 'chat-output');
-el('send-message').onclick = () => call('/conversations/' + el('conversation').value + '/messages/', 'POST', {content:el('message').value}, 'chat-output');
+el('send-message').onclick = async () => {
+  el('send-message').disabled = true;
+  try { await call('/conversations/' + el('conversation').value + '/messages/', 'POST', {content:el('message').value}, 'chat-output'); }
+  finally { el('send-message').disabled = false; }
+};
 el('get-history').onclick = () => call('/conversations/' + el('conversation').value + '/messages/', 'GET', undefined, 'chat-output');
 fetch('/api/v1/scenarios/').then(r=>r.json()).then(items=>items.forEach(s=>el('scenario').add(new Option(s.title,s.id)))).catch(()=>{el('chat-output').textContent='Не удалось загрузить сценарии.';});
 </script></body></html>

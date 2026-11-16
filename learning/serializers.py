@@ -91,10 +91,16 @@ class MessageData(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+class CorrectionData(serializers.Serializer):
+    original = serializers.CharField()
+    corrected = serializers.CharField()
+    explanation = serializers.CharField()
+
+
 class MessageResult(serializers.Serializer):
     user_message = MessageData()
-    assistant_message = MessageData(allow_null=True)
-    feedback = serializers.ListField(child=serializers.DictField())
+    assistant_message = MessageData()
+    feedback = CorrectionData(many=True)
 
 
 class MessageInput(serializers.Serializer):

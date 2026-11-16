@@ -131,17 +131,18 @@ class WeekTwoTests(TestCase):
         self.assertEqual(len(self.client.get('/api/v1/conversations/').json()), 1)
         self.assertEqual(self.client.get(f'/api/v1/conversations/{self.conversation.id}/').status_code, 200)
 
-    def test_message_is_saved_as_user_without_paid_call(self):
+    @patch('learning.views.tutor_reply', return_value=('Hello!', []))
+    def test_message_is_saved_as_user(self, tutor):
         self.as_user()
-        with patch('learning.services.requests.post') as upstream:
-            result = self.client.post(f'/api/v1/conversations/{self.conversation.id}/messages/', {'content': 'Hello!', 'role': 'assistant'}, format='json')
+        result = self.client.post(f'/api/v1/conversations/{self.conversation.id}/messages/', {'content': 'Hello!', 'role': 'assistant'}, format='json')
         self.assertEqual(result.status_code, 201)
         self.assertEqual(result.json()['user_message']['role'], 'user')
-        self.assertIsNone(result.json()['assistant_message'])
-        self.assertEqual(Message.objects.get().content, 'Hello!')
-        upstream.assert_not_called()
+        self.assertEqual(result.json()['assistant_message']['role'], 'assistant')
+        self.assertEqual(Message.objects.get(role='user').content, 'Hello!')
+        tutor.assert_called_once()
 
-    def test_messages_are_loaded_in_order_after_new_client_login(self):
+    @patch('learning.views.tutor_reply', return_value=('Hello!', []))
+    def test_messages_are_loaded_in_order_after_new_client_login(self, tutor):
         self.as_user()
         path = f'/api/v1/conversations/{self.conversation.id}/messages/'
         for text in ['Hello', 'A table for two, please.']:
@@ -151,7 +152,7 @@ class WeekTwoTests(TestCase):
         new_client.credentials(HTTP_AUTHORIZATION='Token ' + login.json()['token'])
         history = new_client.get(path)
         self.assertEqual(history.status_code, 200)
-        self.assertEqual([m['content'] for m in history.json()], ['Hello', 'A table for two, please.'])
+        self.assertEqual([m['content'] for m in history.json() if m['role'] == 'user'], ['Hello', 'A table for two, please.'])
 
     def test_other_user_cannot_read_or_write_messages(self):
         Message.objects.create(conversation=self.conversation, role='user', content='Private')

@@ -50,15 +50,15 @@ USE_I18N = True
 USE_TZ = True
 STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:5173,http://localhost:3000').split(',')
+CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000').split(',')
 REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_PERMISSION_CLASSES': ['rest_framework.permissions.IsAuthenticated'],
     'DEFAULT_AUTHENTICATION_CLASSES': ['rest_framework.authentication.TokenAuthentication'],
-    'DEFAULT_THROTTLE_RATES': {'auth': '20/min'},
+    'DEFAULT_THROTTLE_RATES': {'auth': '20/min', 'tutor': '10/min'},
 }
 SPECTACULAR_SETTINGS = {
-    'TITLE': 'LinguaBot Backend — неделя 2', 'VERSION': '0.2.0',
-    'DESCRIPTION': 'Работают регистрация, вход, профиль, диалоги и сохранение сообщений. Для доступа: Authorization: Token <token>. Ответы ИИ относятся к неделе 3; упражнения и статистика — к неделе 4.',
+    'TITLE': 'LinguaBot Backend — неделя 3', 'VERSION': '0.3.0',
+    'DESCRIPTION': 'Доступны авторизация, профиль и диалоги с ИИ. Упражнения и статистика запланированы на неделю 4.',
     'SERVE_INCLUDE_SCHEMA': False,
 }

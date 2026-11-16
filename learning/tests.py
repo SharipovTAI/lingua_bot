@@ -32,8 +32,8 @@ class BackendTests(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(User.objects.count(), 0)
 
-    def test_draft_message_does_not_call_paid_api(self):
-        with patch('learning.services.requests.post') as upstream:
+    def test_unauthenticated_message_does_not_call_paid_api(self):
+        with patch('learning.tutor.requests.post') as upstream:
             response = self.client.post('/api/v1/conversations/1/messages/', {'content': 'Hello'})
         self.assertEqual(response.status_code, 401)
         upstream.assert_not_called()

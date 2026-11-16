@@ -4,7 +4,7 @@
 body{font:16px/1.5 Arial,sans-serif;max-width:960px;margin:32px auto;padding:0 24px;color:#20252b}h1{margin-bottom:4px}h2{margin-top:28px;font-size:21px}a{color:#1958a6}table{border-collapse:collapse;width:100%}td,th{border:1px solid #d9dfe5;padding:9px 12px;text-align:left}th{background:#f0f3f6}code{font-size:14px}small{color:#555}li{margin-bottom:5px}
 </style></head><body>
 <h1>LinguaBot Backend</h1>
-<p>Неделя 2 · Django + Django REST Framework + SQLite</p>
+<p>Неделя 3 · Django + Django REST Framework + SQLite</p>
 <p>Техническая страница проекта. Учебный интерфейс на React разрабатывается отдельно.</p>
 <p><a href="/api/v1/health/">Проверка сервера</a> · <a href="/api/v1/scenarios/">Сценарии из базы</a> · <a href="/api/docs/">Документация API</a> · <a href="/api/schema/">OpenAPI</a></p>
 <p><a href="/dev/week2/">Проверка регистрации, профиля и истории диалогов</a> (локально, при DEBUG=true)</p>
@@ -19,6 +19,6 @@ body{font:16px/1.5 Arial,sans-serif;max-width:960px;margin:32px auto;padding:0 2
 <p>Токены по данным провайдера: вход {{ probe.usage.prompt_tokens }}, выход {{ probe.usage.completion_tokens }}, всего {{ probe.usage.total_tokens }}.</p>
 <p>Запрошенный лимит: {{ probe.requested_limit }}. Подтверждён по usage: {{ probe.limit_verified|yesno:"да,нет" }}.</p>
 <small>Сохранённый результат {{ probe.checked_at }}. Открытие страницы не вызывает ИИ и не расходует токены.</small>{% endif %}
-<h2>Граница второй недели</h2>
-<p>Сообщения сохраняются без ответов ИИ. Упражнения и статистика остаются заглушками HTTP 501 для авторизованного пользователя. Проверка Apimira выше — сохранённый результат первой недели, а не новый платный запрос.</p>
+<h2>Разговорная практика</h2>
+<p>Чат учитывает уровень ученика и последние реплики. Ответ и исправления сохраняются в SQLite. Упражнения и статистика запланированы на четвёртую неделю.</p>
 </body></html>
