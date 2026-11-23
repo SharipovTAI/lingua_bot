@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.urls import path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
-from learning import views
+from learning import views, practice_views
 
 urlpatterns = [
     path('', views.index, name='index'),
@@ -18,7 +18,12 @@ urlpatterns = [
     path('api/v1/conversations/', views.ConversationsView.as_view()),
     path('api/v1/conversations/<int:conversation_id>/', views.ConversationDetailView.as_view()),
     path('api/v1/conversations/<int:conversation_id>/messages/', views.MessagesView.as_view()),
-    path('api/v1/exercises/', views.ExercisesDraft.as_view()),
-    path('api/v1/exercises/<int:exercise_id>/attempts/', views.AttemptsDraft.as_view()),
-    path('api/v1/statistics/', views.StatisticsDraft.as_view()),
+    path('api/v1/exercises/', practice_views.ExercisesView.as_view()),
+    path('api/v1/exercises/<int:exercise_id>/attempts/', practice_views.AttemptsView.as_view()),
+    path('api/v1/placement/', practice_views.PlacementView.as_view()),
+    path('api/v1/vocabulary/', practice_views.VocabularyView.as_view()),
+    path('api/v1/vocabulary/review/', practice_views.ReviewListView.as_view()),
+    path('api/v1/vocabulary/<int:word_id>/', practice_views.VocabularyDetailView.as_view()),
+    path('api/v1/vocabulary/<int:word_id>/reviews/', practice_views.ReviewView.as_view()),
+    path('api/v1/statistics/', practice_views.StatisticsView.as_view()),
 ]

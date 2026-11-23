@@ -1,6 +1,6 @@
-# Контракт API — неделя 3
+# Контракт API — неделя 4
 
-Версия 0.3.0. Основа: http://127.0.0.1:8000/api/v1/. Формат JSON, UTF-8.
+Версия 0.4.0. Основа: http://127.0.0.1:8000/api/v1/. Формат JSON, UTF-8.
 Пути заканчиваются /. Примеры ниже соответствуют реализованным операциям.
 
 ## Авторизация
@@ -105,7 +105,7 @@ GET /conversations/{id}/messages/ возвращает хронологичес�
 
 GET /health/ — проверка сервера и SELECT 1 к SQLite. Пример ответа 200:
 
-    {"status":"ok","service":"linguabot-backend","version":"0.3.0","database":"sqlite","stage":"week-3"}
+    {"status":"ok","service":"linguabot-backend","version":"0.4.0","database":"sqlite","stage":"week-4"}
 
 При ошибке БД — 503. GET /scenarios/ возвращает массив id, slug, title, description.
 
@@ -117,9 +117,7 @@ GET /health/ — проверка сервера и SELECT 1 к SQLite. Прим
 429 — превышен лимит регистрации/входа.
 Ошибки доступа используют поле detail. Пароль и токен в ошибках не выводятся.
 
-GET /exercises/, POST /exercises/{id}/attempts/, GET /statistics/ для вошедшего
-пользователя остаются HTTP 501 с error.code=not_implemented и planned_week=4.
-Без токена — 401. Генерация ответов ИИ и исправления работают в чате.
+Входной тест, упражнения, словарь и статистика реализованы. Подробный контракт: [API недели 4](week-4-api.md).
 
 ## Подключение React
 

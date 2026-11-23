@@ -58,7 +58,7 @@ REST_FRAMEWORK = {
     'DEFAULT_THROTTLE_RATES': {'auth': '20/min', 'tutor': '10/min'},
 }
 SPECTACULAR_SETTINGS = {
-    'TITLE': 'LinguaBot Backend — неделя 3', 'VERSION': '0.3.0',
-    'DESCRIPTION': 'Доступны авторизация, профиль и диалоги с ИИ. Упражнения и статистика запланированы на неделю 4.',
+    'TITLE': 'LinguaBot Backend — неделя 4', 'VERSION': '0.4.0',
+    'DESCRIPTION': 'Авторизация, диалоги с ИИ, входной тест, упражнения, словарь и прогресс.',
     'SERVE_INCLUDE_SCHEMA': False,
 }

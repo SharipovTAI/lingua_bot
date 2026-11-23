@@ -178,10 +178,10 @@ class WeekTwoTests(TestCase):
         result = self.client.post('/api/v1/auth/login/', {'email': 'alice@example.com', 'password': PASSWORD})
         self.assertNotEqual(result.json()['token'], old_token)
 
-    def test_exercises_still_planned_but_auth_is_required(self):
+    def test_exercises_require_authentication(self):
         self.assertEqual(self.client.get('/api/v1/exercises/').status_code, 401)
         self.as_user()
-        self.assertEqual(self.client.get('/api/v1/exercises/').status_code, 501)
+        self.assertEqual(self.client.get('/api/v1/exercises/').status_code, 200)
 
     def test_login_throttle_limits_repeated_attempts(self):
         # Некорректная форма не вызывает хеширование пароля, но учитывается ограничителем.

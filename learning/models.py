@@ -39,19 +39,28 @@ class Message(models.Model):
 
 
 class Exercise(models.Model):
+    code = models.SlugField(max_length=80, unique=True, null=True, blank=True)
     title = models.CharField(max_length=200)
     level = models.CharField(max_length=2, choices=LEVELS)
     kind = models.CharField(max_length=20, choices=[('grammar', 'Грамматика'), ('vocabulary', 'Лексика')])
     question = models.TextField()
     answer = models.TextField()
+    options = models.JSONField(default=list, blank=True)
+    explanation = models.TextField(blank=True)
+    topic = models.CharField(max_length=80, blank=True)
+    is_placement = models.BooleanField(default=False)
 
 
 class Attempt(models.Model):
+    request_id = models.UUIDField(null=True, blank=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     exercise = models.ForeignKey(Exercise, on_delete=models.CASCADE)
     answer = models.TextField()
     is_correct = models.BooleanField()
     created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['user', 'request_id'], name='unique_attempt_request')]
 
 
 class VocabularyWord(models.Model):
@@ -59,6 +68,34 @@ class VocabularyWord(models.Model):
     word = models.CharField(max_length=100)
     translation = models.CharField(max_length=200)
     next_review = models.DateTimeField(null=True, blank=True)
+    streak = models.PositiveIntegerField(default=0)
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=['user', 'word'], name='unique_user_word')]
+
+
+class PlacementResult(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    request_id = models.UUIDField()
+    answers = models.JSONField()
+    score = models.PositiveIntegerField()
+    total = models.PositiveIntegerField()
+    level = models.CharField(max_length=2, choices=LEVELS)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['user', 'request_id'], name='unique_placement_request')]
+
+
+class WordReview(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    word = models.ForeignKey(VocabularyWord, on_delete=models.CASCADE)
+    request_id = models.UUIDField()
+    answer = models.CharField(max_length=200)
+    is_correct = models.BooleanField()
+    translation = models.CharField(max_length=200)
+    next_review = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['user', 'request_id'], name='unique_review_request')]

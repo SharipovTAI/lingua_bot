@@ -17,7 +17,7 @@ from .models import Scenario, Profile, Conversation, Message
 from .tutor import TutorError, tutor_reply
 from .serializers import (
     ScenarioSerializer, RegistrationInput, RegistrationResult, LoginInput, LoginResult, UserData,
-    ProfileData, ConversationData, MessageData, MessageResult, MessageInput, AttemptInput,
+    ProfileData, ConversationData, MessageData, MessageResult, MessageInput,
 )
 
 
@@ -50,7 +50,7 @@ class HealthView(APIView):
                 cursor.fetchone()
         except Exception:
             return Response({'status': 'error', 'database': 'unavailable'}, status=503)
-        return Response({'status': 'ok', 'service': 'linguabot-backend', 'version': '0.3.0', 'database': 'sqlite', 'stage': 'week-3'})
+        return Response({'status': 'ok', 'service': 'linguabot-backend', 'version': '0.4.0', 'database': 'sqlite', 'stage': 'week-4'})
 
 
 class ScenarioListView(generics.ListAPIView):
@@ -62,13 +62,6 @@ class ScenarioListView(generics.ListAPIView):
     @extend_schema(tags=['Готово — неделя 1'], summary='Получить справочник сценариев из SQLite')
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
-
-
-DRAFT_RESPONSE = {501: OpenApiResponse(description='Операция запланирована, бизнес-логика ещё не реализована')}
-
-
-def planned(week):
-    return Response({'error': {'code': 'not_implemented', 'message': 'Черновой контракт API. Реализация запланирована.', 'planned_week': week}}, status=501)
 
 
 class RegisterView(APIView):
@@ -173,21 +166,3 @@ class MessagesView(APIView):
             message = Message.objects.create(conversation=conversation, role='user', content=content)
             answer = Message.objects.create(conversation=conversation, role='assistant', content=reply, feedback={'corrections': corrections})
         return Response({'user_message': MessageData(message).data, 'assistant_message': MessageData(answer).data, 'feedback': corrections}, status=201)
-
-
-class ExercisesDraft(APIView):
-    @extend_schema(tags=['Неделя 4 — контракт'], responses=DRAFT_RESPONSE)
-    def get(self, request):
-        return planned(4)
-
-
-class AttemptsDraft(APIView):
-    @extend_schema(tags=['Неделя 4 — контракт'], request=AttemptInput, responses=DRAFT_RESPONSE)
-    def post(self, request, exercise_id):
-        return planned(4)
-
-
-class StatisticsDraft(APIView):
-    @extend_schema(tags=['Неделя 4 — контракт'], responses=DRAFT_RESPONSE)
-    def get(self, request):
-        return planned(4)

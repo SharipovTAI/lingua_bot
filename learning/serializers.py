@@ -3,7 +3,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError, transaction
 from rest_framework import serializers
-from .models import Scenario, Profile, Conversation, Message
+from .models import (Scenario, Profile, Conversation, Message, Exercise, Attempt, VocabularyWord, PlacementResult, WordReview)
 
 User = get_user_model()
 
@@ -109,3 +109,97 @@ class MessageInput(serializers.Serializer):
 
 class AttemptInput(serializers.Serializer):
     answer = serializers.CharField(max_length=2000)
+
+# API четвёртой недели
+
+
+
+class ExerciseData(serializers.ModelSerializer):
+    class Meta:
+        model = Exercise
+        fields = ['id', 'title', 'level', 'kind', 'topic', 'question', 'options']
+
+
+class PracticeAnswerInput(AttemptInput):
+    request_id = serializers.UUIDField()
+
+
+class AttemptData(serializers.ModelSerializer):
+    correct_answer = serializers.CharField(source='exercise.answer', read_only=True)
+    explanation = serializers.CharField(source='exercise.explanation', read_only=True)
+
+    class Meta:
+        model = Attempt
+        fields = ['id', 'request_id', 'exercise_id', 'answer', 'is_correct',
+                  'correct_answer', 'explanation', 'created_at']
+
+
+class PlacementAnswer(serializers.Serializer):
+    exercise_id = serializers.IntegerField(min_value=1)
+    answer = serializers.CharField(max_length=2000)
+
+
+class PlacementInput(serializers.Serializer):
+    request_id = serializers.UUIDField()
+    answers = PlacementAnswer(many=True, allow_empty=False, max_length=20)
+
+    def validate_answers(self, value):
+        ids = [item['exercise_id'] for item in value]
+        if len(set(ids)) != len(ids):
+            raise serializers.ValidationError('Вопросы не должны повторяться.')
+        return sorted(value, key=lambda item: item['exercise_id'])
+
+
+class PlacementData(serializers.ModelSerializer):
+    class Meta:
+        model = PlacementResult
+        fields = ['id', 'request_id', 'score', 'total', 'level', 'created_at']
+
+
+class VocabularyInput(serializers.Serializer):
+    word = serializers.CharField(max_length=100)
+    translation = serializers.CharField(max_length=200)
+
+    def validate_word(self, value):
+        from .practice import normalized
+        return normalized(value)
+
+
+class VocabularyData(serializers.ModelSerializer):
+    class Meta:
+        model = VocabularyWord
+        fields = ['id', 'word', 'translation', 'next_review', 'streak']
+
+
+class ReviewCard(serializers.ModelSerializer):
+    class Meta:
+        model = VocabularyWord
+        fields = ['id', 'word', 'next_review']
+
+
+class ReviewInput(serializers.Serializer):
+    request_id = serializers.UUIDField()
+    answer = serializers.CharField(max_length=200)
+
+
+class ReviewData(serializers.ModelSerializer):
+    class Meta:
+        model = WordReview
+        fields = ['id', 'request_id', 'word_id', 'answer', 'is_correct',
+                  'translation', 'next_review', 'created_at']
+
+
+class StatisticsData(serializers.Serializer):
+    level = serializers.CharField()
+    attempts = serializers.IntegerField()
+    correct = serializers.IntegerField()
+    accuracy = serializers.FloatField()
+    completed_exercises = serializers.IntegerField()
+    by_kind = serializers.DictField()
+    vocabulary_words = serializers.IntegerField()
+    words_due = serializers.IntegerField()
+    word_reviews = serializers.IntegerField()
+    correct_reviews = serializers.IntegerField()
+    conversations = serializers.IntegerField()
+    user_messages = serializers.IntegerField()
+    placement = PlacementData(allow_null=True)
