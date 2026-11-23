@@ -1,12 +1,21 @@
 import { createMockApi } from './mock'
 import { ApiError } from './types'
 import type {
+  Attempt,
   ChatMessage,
   Conversation,
+  Exercise,
+  ExerciseKind,
   MessageSendResult,
+  PlacementAnswer,
+  PlacementResult,
   Profile,
+  ReviewCard,
   Scenario,
+  Statistics,
   User,
+  VocabularyWord,
+  WordReview,
 } from './types'
 
 const TOKEN_KEY = 'linguabot_token'
@@ -114,6 +123,29 @@ const liveApi = {
     request<ChatMessage[]>(`/conversations/${conversationId}/messages/`),
   send: (conversationId: number, content: string) =>
     request<MessageSendResult>(`/conversations/${conversationId}/messages/`, 'POST', { content }),
+  placement: () => request<Exercise[]>('/placement/'),
+  submitPlacement: (requestId: string, answers: PlacementAnswer[]) =>
+    request<PlacementResult>('/placement/', 'POST', { request_id: requestId, answers }),
+  exercises: (kind?: ExerciseKind) =>
+    request<Exercise[]>(`/exercises/${kind ? `?kind=${kind}` : ''}`),
+  attempt: (exerciseId: number, answer: string, requestId: string) =>
+    request<Attempt>(`/exercises/${exerciseId}/attempts/`, 'POST', {
+      answer,
+      request_id: requestId,
+    }),
+  vocabulary: () => request<VocabularyWord[]>('/vocabulary/'),
+  addWord: (word: string, translation: string) =>
+    request<VocabularyWord>('/vocabulary/', 'POST', { word, translation }),
+  updateWord: (wordId: number, data: Partial<Pick<VocabularyWord, 'word' | 'translation'>>) =>
+    request<VocabularyWord>(`/vocabulary/${wordId}/`, 'PATCH', data),
+  deleteWord: (wordId: number) => request<null>(`/vocabulary/${wordId}/`, 'DELETE'),
+  reviewCards: () => request<ReviewCard[]>('/vocabulary/review/'),
+  reviewWord: (wordId: number, answer: string, requestId: string) =>
+    request<WordReview>(`/vocabulary/${wordId}/reviews/`, 'POST', {
+      answer,
+      request_id: requestId,
+    }),
+  statistics: () => request<Statistics>('/statistics/'),
 }
 
 export const api = isLocalApi ? createMockApi() : liveApi

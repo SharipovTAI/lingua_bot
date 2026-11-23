@@ -7,6 +7,11 @@ import { LoginPage } from './pages/LoginPage'
 import { RegisterPage } from './pages/RegisterPage'
 import { ProfilePage } from './pages/ProfilePage'
 import { ChatPage } from './pages/ChatPage'
+import { PlacementPage } from './pages/PlacementPage'
+import { ExercisesPage } from './pages/ExercisesPage'
+import { DictionaryPage } from './pages/DictionaryPage'
+import { ProgressPage } from './pages/ProgressPage'
+import { AchievementsPage } from './pages/AchievementsPage'
 
 export default function App() {
   return (
@@ -18,11 +23,12 @@ export default function App() {
           <Route index element={<DashboardPage />} />
           <Route path="practice" element={<ChatPage />} />
           <Route path="lesson" element={<PlaceholderPage />} />
-          <Route path="exercises" element={<PlaceholderPage />} />
-          <Route path="dictionary" element={<PlaceholderPage />} />
+          <Route path="placement" element={<PlacementPage />} />
+          <Route path="exercises" element={<ExercisesPage />} />
+          <Route path="dictionary" element={<DictionaryPage />} />
           <Route path="notes" element={<PlaceholderPage />} />
-          <Route path="progress" element={<PlaceholderPage />} />
-          <Route path="achievements" element={<PlaceholderPage />} />
+          <Route path="progress" element={<ProgressPage />} />
+          <Route path="achievements" element={<AchievementsPage />} />
           <Route path="settings" element={<ProfilePage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

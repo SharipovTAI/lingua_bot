@@ -4,6 +4,8 @@ import { MessageCircle, Plus, Send } from 'lucide-react'
 import { api } from '../api/client'
 import { ApiError } from '../api/types'
 import type { ChatMessage, Conversation, Scenario } from '../api/types'
+import { useAuth } from '../auth/AuthContext'
+import { logActivity } from '../lib/activity'
 
 function formatTime(iso: string) {
   const date = new Date(iso)
@@ -17,6 +19,7 @@ function formatTime(iso: string) {
 }
 
 export function ChatPage() {
+  const { user } = useAuth()
   const [scenarios, setScenarios] = useState<Scenario[]>([])
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [activeId, setActiveId] = useState<number | null>(null)
@@ -85,6 +88,7 @@ export function ChatPage() {
       setConversations((current) => [created, ...current])
       setActiveId(created.id)
       setMessages([])
+      if (user) logActivity(user.id, 'conversation')
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Не удалось создать диалог.')
     }
@@ -98,6 +102,7 @@ export function ChatPage() {
     try {
       const result = await api.send(activeId, draft.trim())
       setDraft('')
+      if (user) logActivity(user.id, 'message')
       setMessages((current) => {
         const next = [...current, result.user_message]
         if (result.assistant_message) next.push(result.assistant_message)

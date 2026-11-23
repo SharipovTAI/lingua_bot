@@ -1,14 +1,4 @@
-import {
-  Award,
-  BookMarked,
-  BookOpen,
-  LayoutDashboard,
-  MessageCircle,
-  NotebookPen,
-  PenLine,
-  Settings,
-  TrendingUp,
-} from 'lucide-react'
+import { Award, BookMarked, BookOpen, LayoutDashboard, MessageCircle, NotebookPen, PenLine, Settings, Target, TrendingUp } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
 export type NavItem = {
@@ -22,6 +12,7 @@ export const navItems: NavItem[] = [
   { to: '/', label: 'Панель', icon: LayoutDashboard },
   { to: '/practice', label: 'Разговорная практика', icon: MessageCircle },
   { to: '/lesson', label: 'Ежедневный урок', icon: BookOpen, badge: true },
+  { to: '/placement', label: 'Входной тест', icon: Target },
   { to: '/exercises', label: 'Упражнения', icon: PenLine },
   { to: '/dictionary', label: 'Словарь', icon: BookMarked },
   { to: '/notes', label: 'Заметки', icon: NotebookPen },

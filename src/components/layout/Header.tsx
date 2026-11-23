@@ -1,6 +1,7 @@
 import { Bell, ChevronDown, Flame, Menu, UserRound } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
+import { useActivity } from '../../hooks/useActivity'
 
 type HeaderProps = {
   onMenu: () => void
@@ -8,6 +9,7 @@ type HeaderProps = {
 
 export function Header({ onMenu }: HeaderProps) {
   const { user, profile } = useAuth()
+  const activity = useActivity(user?.id)
   const name = user?.email.split('@')[0] ?? 'Пользователь'
 
   return (
@@ -30,10 +32,10 @@ export function Header({ onMenu }: HeaderProps) {
         <ChevronDown size={14} color="#7a8c89" />
       </button>
 
-      <button className="chip" type="button">
+      <Link className="chip" to="/progress" title="Серия дней с занятиями">
         <Flame size={16} />
-        12-дневная серия
-      </button>
+        {activity.streak > 0 ? `${activity.streak}-дневная серия` : 'Серия: старт'}
+      </Link>
 
       <button className="chip ghost" type="button" aria-label="Уведомления">
         <Bell size={16} />
