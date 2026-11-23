@@ -1,0 +1,1042 @@
+openapi: 3.0.3
+info:
+  title: LinguaBot Backend — неделя 4
+  version: 0.4.0
+  description: Авторизация, диалоги с ИИ, входной тест, упражнения, словарь и прогресс.
+paths:
+  /api/v1/auth/login/:
+    post:
+      operationId: v1_auth_login_create
+      tags:
+      - Авторизация
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginInput'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LoginInput'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LoginInput'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResult'
+          description: ''
+        '401':
+          description: Неверный email или пароль
+  /api/v1/auth/logout/:
+    post:
+      operationId: v1_auth_logout_create
+      tags:
+      - Авторизация
+      security:
+      - tokenAuth: []
+      responses:
+        '204':
+          description: Токен отозван
+  /api/v1/auth/register/:
+    post:
+      operationId: v1_auth_register_create
+      tags:
+      - Авторизация
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegistrationInput'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RegistrationInput'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RegistrationInput'
+        required: true
+      security:
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistrationResult'
+          description: ''
+        '400':
+          description: Ошибка проверки email или пароля
+  /api/v1/conversations/:
+    get:
+      operationId: v1_conversations_list
+      tags:
+      - Диалоги
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ConversationData'
+          description: ''
+    post:
+      operationId: v1_conversations_create
+      tags:
+      - Диалоги
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConversationData'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ConversationData'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ConversationData'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationData'
+          description: ''
+  /api/v1/conversations/{conversation_id}/:
+    get:
+      operationId: v1_conversations_retrieve
+      parameters:
+      - in: path
+        name: conversation_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Диалоги
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationData'
+          description: ''
+        '404':
+          description: Диалог не найден или принадлежит другому пользователю
+  /api/v1/conversations/{conversation_id}/messages/:
+    get:
+      operationId: v1_conversations_messages_list
+      parameters:
+      - in: path
+        name: conversation_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Сообщения
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MessageData'
+          description: ''
+    post:
+      operationId: v1_conversations_messages_create
+      summary: Отправить сообщение и получить ответ ИИ с исправлением
+      parameters:
+      - in: path
+        name: conversation_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Сообщения
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MessageInput'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MessageInput'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MessageInput'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResult'
+          description: ''
+        '429':
+          description: Превышена частота отправки
+        '502':
+          description: Ошибка ответа ИИ
+        '503':
+          description: ИИ недоступен
+        '504':
+          description: Истекло время ожидания ИИ
+  /api/v1/exercises/:
+    get:
+      operationId: v1_exercises_list
+      parameters:
+      - in: query
+        name: kind
+        schema:
+          type: string
+          enum:
+          - grammar
+          - vocabulary
+      tags:
+      - Упражнения
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ExerciseData'
+          description: ''
+  /api/v1/exercises/{exercise_id}/attempts/:
+    post:
+      operationId: v1_exercises_attempts_create
+      parameters:
+      - in: path
+        name: exercise_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Упражнения
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PracticeAnswerInput'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PracticeAnswerInput'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PracticeAnswerInput'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttemptData'
+          description: ''
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttemptData'
+          description: ''
+  /api/v1/health/:
+    get:
+      operationId: v1_health_retrieve
+      tags:
+      - Готово — неделя 1
+      security:
+      - {}
+      responses:
+        '200':
+          description: Сервер и база отвечают
+        '503':
+          description: База недоступна
+  /api/v1/placement/:
+    get:
+      operationId: v1_placement_list
+      tags:
+      - Входной тест
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ExerciseData'
+          description: ''
+    post:
+      operationId: v1_placement_create
+      tags:
+      - Входной тест
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlacementInput'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PlacementInput'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PlacementInput'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlacementData'
+          description: ''
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlacementData'
+          description: ''
+  /api/v1/profile/:
+    get:
+      operationId: v1_profile_retrieve
+      tags:
+      - Профиль
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileData'
+          description: ''
+    patch:
+      operationId: v1_profile_partial_update
+      tags:
+      - Профиль
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProfileData'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProfileData'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProfileData'
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileData'
+          description: ''
+  /api/v1/scenarios/:
+    get:
+      operationId: v1_scenarios_list
+      summary: Получить справочник сценариев из SQLite
+      tags:
+      - Готово — неделя 1
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Scenario'
+          description: ''
+  /api/v1/statistics/:
+    get:
+      operationId: v1_statistics_retrieve
+      tags:
+      - Прогресс
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatisticsData'
+          description: ''
+  /api/v1/vocabulary/:
+    get:
+      operationId: v1_vocabulary_list
+      tags:
+      - Словарь
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/VocabularyData'
+          description: ''
+    post:
+      operationId: v1_vocabulary_create
+      tags:
+      - Словарь
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VocabularyInput'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/VocabularyInput'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/VocabularyInput'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VocabularyData'
+          description: ''
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VocabularyData'
+          description: ''
+  /api/v1/vocabulary/{word_id}/:
+    patch:
+      operationId: v1_vocabulary_partial_update
+      parameters:
+      - in: path
+        name: word_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Словарь
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedVocabularyInput'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedVocabularyInput'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedVocabularyInput'
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VocabularyData'
+          description: ''
+    delete:
+      operationId: v1_vocabulary_destroy
+      parameters:
+      - in: path
+        name: word_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Словарь
+      security:
+      - tokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/vocabulary/{word_id}/reviews/:
+    post:
+      operationId: v1_vocabulary_reviews_create
+      parameters:
+      - in: path
+        name: word_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Словарь
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewInput'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReviewInput'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReviewInput'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewData'
+          description: ''
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewData'
+          description: ''
+  /api/v1/vocabulary/review/:
+    get:
+      operationId: v1_vocabulary_review_list
+      tags:
+      - Словарь
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ReviewCard'
+          description: ''
+components:
+  schemas:
+    AttemptData:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        request_id:
+          type: string
+          format: uuid
+          nullable: true
+        exercise_id:
+          type: integer
+          readOnly: true
+        answer:
+          type: string
+        is_correct:
+          type: boolean
+        correct_answer:
+          type: string
+          readOnly: true
+        explanation:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - answer
+      - correct_answer
+      - created_at
+      - exercise_id
+      - explanation
+      - id
+      - is_correct
+    ConversationData:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        scenario_id:
+          type: integer
+        scenario_title:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - scenario_id
+      - scenario_title
+    CorrectionData:
+      type: object
+      properties:
+        original:
+          type: string
+        corrected:
+          type: string
+        explanation:
+          type: string
+      required:
+      - corrected
+      - explanation
+      - original
+    ExerciseData:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 200
+        level:
+          $ref: '#/components/schemas/LevelEnum'
+        kind:
+          $ref: '#/components/schemas/KindEnum'
+        topic:
+          type: string
+          maxLength: 80
+        question:
+          type: string
+        options: {}
+      required:
+      - id
+      - kind
+      - level
+      - question
+      - title
+    KindEnum:
+      enum:
+      - grammar
+      - vocabulary
+      type: string
+      description: |-
+        * `grammar` - Грамматика
+        * `vocabulary` - Лексика
+    LanguageEnum:
+      enum:
+      - en
+      type: string
+      description: '* `en` - en'
+    LevelEnum:
+      enum:
+      - A1
+      - A2
+      - B1
+      - B2
+      - C1
+      type: string
+      description: |-
+        * `A1` - A1
+        * `A2` - A2
+        * `B1` - B1
+        * `B2` - B2
+        * `C1` - C1
+    LoginInput:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 150
+        password:
+          type: string
+          writeOnly: true
+          maxLength: 128
+      required:
+      - email
+      - password
+    LoginResult:
+      type: object
+      properties:
+        token:
+          type: string
+        user:
+          $ref: '#/components/schemas/UserData'
+      required:
+      - token
+      - user
+    MessageData:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        role:
+          allOf:
+          - $ref: '#/components/schemas/RoleEnum'
+          readOnly: true
+        content:
+          type: string
+          readOnly: true
+        feedback:
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - content
+      - created_at
+      - feedback
+      - id
+      - role
+    MessageInput:
+      type: object
+      properties:
+        content:
+          type: string
+          maxLength: 2000
+      required:
+      - content
+    MessageResult:
+      type: object
+      properties:
+        user_message:
+          $ref: '#/components/schemas/MessageData'
+        assistant_message:
+          $ref: '#/components/schemas/MessageData'
+        feedback:
+          type: array
+          items:
+            $ref: '#/components/schemas/CorrectionData'
+      required:
+      - assistant_message
+      - feedback
+      - user_message
+    PatchedProfileData:
+      type: object
+      properties:
+        level:
+          $ref: '#/components/schemas/LevelEnum'
+        goal:
+          type: string
+          maxLength: 200
+        language:
+          $ref: '#/components/schemas/LanguageEnum'
+    PatchedVocabularyInput:
+      type: object
+      properties:
+        word:
+          type: string
+          maxLength: 100
+        translation:
+          type: string
+          maxLength: 200
+    PlacementAnswer:
+      type: object
+      properties:
+        exercise_id:
+          type: integer
+          minimum: 1
+        answer:
+          type: string
+          maxLength: 2000
+      required:
+      - answer
+      - exercise_id
+    PlacementData:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        request_id:
+          type: string
+          format: uuid
+        score:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        total:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        level:
+          $ref: '#/components/schemas/LevelEnum'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - level
+      - request_id
+      - score
+      - total
+    PlacementInput:
+      type: object
+      properties:
+        request_id:
+          type: string
+          format: uuid
+        answers:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlacementAnswer'
+      required:
+      - answers
+      - request_id
+    PracticeAnswerInput:
+      type: object
+      properties:
+        answer:
+          type: string
+          maxLength: 2000
+        request_id:
+          type: string
+          format: uuid
+      required:
+      - answer
+      - request_id
+    ProfileData:
+      type: object
+      properties:
+        level:
+          $ref: '#/components/schemas/LevelEnum'
+        goal:
+          type: string
+          maxLength: 200
+        language:
+          $ref: '#/components/schemas/LanguageEnum'
+    RegistrationInput:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 150
+        password:
+          type: string
+          writeOnly: true
+          maxLength: 128
+      required:
+      - email
+      - password
+    RegistrationResult:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/UserData'
+      required:
+      - user
+    ReviewCard:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        word:
+          type: string
+          maxLength: 100
+        next_review:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - id
+      - word
+    ReviewData:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        request_id:
+          type: string
+          format: uuid
+        word_id:
+          type: integer
+          readOnly: true
+        answer:
+          type: string
+          maxLength: 200
+        is_correct:
+          type: boolean
+        translation:
+          type: string
+          maxLength: 200
+        next_review:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - answer
+      - created_at
+      - id
+      - is_correct
+      - next_review
+      - request_id
+      - translation
+      - word_id
+    ReviewInput:
+      type: object
+      properties:
+        request_id:
+          type: string
+          format: uuid
+        answer:
+          type: string
+          maxLength: 200
+      required:
+      - answer
+      - request_id
+    RoleEnum:
+      enum:
+      - user
+      - assistant
+      type: string
+      description: |-
+        * `user` - user
+        * `assistant` - assistant
+    Scenario:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        slug:
+          type: string
+          maxLength: 50
+          pattern: ^[-a-zA-Z0-9_]+$
+        title:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+      required:
+      - description
+      - id
+      - slug
+      - title
+    StatisticsData:
+      type: object
+      properties:
+        level:
+          type: string
+        attempts:
+          type: integer
+        correct:
+          type: integer
+        accuracy:
+          type: number
+          format: double
+        completed_exercises:
+          type: integer
+        by_kind:
+          type: object
+          additionalProperties: {}
+        vocabulary_words:
+          type: integer
+        words_due:
+          type: integer
+        word_reviews:
+          type: integer
+        correct_reviews:
+          type: integer
+        conversations:
+          type: integer
+        user_messages:
+          type: integer
+        placement:
+          allOf:
+          - $ref: '#/components/schemas/PlacementData'
+          nullable: true
+      required:
+      - accuracy
+      - attempts
+      - by_kind
+      - completed_exercises
+      - conversations
+      - correct
+      - correct_reviews
+      - level
+      - placement
+      - user_messages
+      - vocabulary_words
+      - word_reviews
+      - words_due
+    UserData:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        email:
+          type: string
+          format: email
+          title: Адрес электронной почты
+          maxLength: 254
+      required:
+      - id
+    VocabularyData:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        word:
+          type: string
+          maxLength: 100
+        translation:
+          type: string
+          maxLength: 200
+        next_review:
+          type: string
+          format: date-time
+          nullable: true
+        streak:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+      required:
+      - id
+      - translation
+      - word
+    VocabularyInput:
+      type: object
+      properties:
+        word:
+          type: string
+          maxLength: 100
+        translation:
+          type: string
+          maxLength: 200
+      required:
+      - translation
+      - word
+  securitySchemes:
+    tokenAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: Token-based authentication with required prefix "Token"

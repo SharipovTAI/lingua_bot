@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><title>LinguaBot Backend</title>
+<style>
+body{font:16px/1.5 Arial,sans-serif;max-width:960px;margin:32px auto;padding:0 24px;color:#20252b}h1{margin-bottom:4px}h2{margin-top:28px;font-size:21px}a{color:#1958a6}table{border-collapse:collapse;width:100%}td,th{border:1px solid #d9dfe5;padding:9px 12px;text-align:left}th{background:#f0f3f6}code{font-size:14px}small{color:#555}li{margin-bottom:5px}
+</style></head><body>
+<h1>LinguaBot Backend</h1>
+<p>Неделя 3 · Django + Django REST Framework + SQLite</p>
+<p>Техническая страница проекта. Учебный интерфейс на React разрабатывается отдельно.</p>
+<p><a href="/api/v1/health/">Проверка сервера</a> · <a href="/api/v1/scenarios/">Сценарии из базы</a> · <a href="/api/docs/">Документация API</a> · <a href="/api/schema/">OpenAPI</a></p>
+<p><a href="/dev/week2/">Проверка регистрации, профиля и истории диалогов</a> (локально, при DEBUG=true)</p>
+<h2>Что реализовано</h2>
+<ul><li>Регистрация по email и хранение пароля в виде хеша Django.</li><li>Вход по токену и выход с отзывом токена.</li><li>Профиль с уровнем и целью изучения английского языка.</li><li>Создание диалогов, сохранение сообщений и получение истории из SQLite.</li><li>Доступ только к своим диалогам; документация API для React.</li></ul>
+<h2>Таблицы приложения в SQLite</h2>
+<table><tr><th>Таблица</th><th>Состояние</th></tr>{% for table in tables %}<tr><td><code>{{ table }}</code></td><td>Создана миграцией</td></tr>{% empty %}<tr><td colspan="2">Сначала выполните migrate</td></tr>{% endfor %}</table>
+<h2>Сценарии из SQLite</h2>
+<table><tr><th>Название</th><th>Содержание</th></tr>{% for item in scenarios %}<tr><td>{{ item.title }}</td><td>{{ item.description }}</td></tr>{% empty %}<tr><td colspan="2">Выполните seed_scenarios</td></tr>{% endfor %}</table>
+{% if probe %}<h2>Последняя проверка Apimira</h2>
+<p>HTTP {{ probe.http_status }} · модель <code>{{ probe.model }}</code> · ответ <strong>{{ probe.reply }}</strong></p>
+<p>Токены по данным провайдера: вход {{ probe.usage.prompt_tokens }}, выход {{ probe.usage.completion_tokens }}, всего {{ probe.usage.total_tokens }}.</p>
+<p>Запрошенный лимит: {{ probe.requested_limit }}. Подтверждён по usage: {{ probe.limit_verified|yesno:"да,нет" }}.</p>
+<small>Сохранённый результат {{ probe.checked_at }}. Открытие страницы не вызывает ИИ и не расходует токены.</small>{% endif %}
+<h2>Разговорная практика</h2>
+<p>Чат учитывает уровень ученика и последние реплики. Ответ и исправления сохраняются в SQLite. Доступны входной тест, упражнения, словарь с повторением и статистика через API.</p>
+</body></html>
