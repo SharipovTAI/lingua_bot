@@ -21,10 +21,10 @@ class BackendTests(TestCase):
     def test_seed_is_repeatable_and_api_reads_database(self):
         call_command('seed_scenarios', verbosity=0)
         call_command('seed_scenarios', verbosity=0)
-        self.assertEqual(Scenario.objects.count(), 5)
+        self.assertEqual(Scenario.objects.count(), 10)
         Scenario.objects.filter(slug='cafe').update(title='Изменено в базе')
         response = self.client.get('/api/v1/scenarios/')
-        self.assertEqual(len(response.json()), 5)
+        self.assertEqual(len(response.json()), 10)
         self.assertIn('Изменено в базе', [item['title'] for item in response.json()])
 
     def test_weak_registration_does_not_create_user(self):

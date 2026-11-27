@@ -1,4 +1,5 @@
 import json
+from threading import Lock
 
 from django.conf import settings
 from django.contrib.auth import authenticate
@@ -13,7 +14,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 
-from .models import Scenario, Profile, Conversation, Message
+from .models import Scenario, Profile, Conversation, Message, LanguageProgress
 from .tutor import TutorError, tutor_reply
 from .serializers import (
     ScenarioSerializer, RegistrationInput, RegistrationResult, LoginInput, LoginResult, UserData,
@@ -50,7 +51,7 @@ class HealthView(APIView):
                 cursor.fetchone()
         except Exception:
             return Response({'status': 'error', 'database': 'unavailable'}, status=503)
-        return Response({'status': 'ok', 'service': 'linguabot-backend', 'version': '0.4.0', 'database': 'sqlite', 'stage': 'week-4'})
+        return Response({'status': 'ok', 'service': 'linguabot-backend', 'version': '0.5.0', 'database': 'sqlite', 'stage': 'week-5'})
 
 
 class ScenarioListView(generics.ListAPIView):
@@ -120,14 +121,15 @@ class ProfileView(APIView):
 class ConversationsView(APIView):
     @extend_schema(tags=['Диалоги'], responses=ConversationData(many=True))
     def get(self, request):
-        conversations = Conversation.objects.filter(user=request.user).select_related('scenario').order_by('-created_at', '-id')
+        conversations = Conversation.objects.filter(user=request.user, language=Profile.objects.get_or_create(user=request.user)[0].language).select_related('scenario').order_by('-created_at', '-id')
         return Response(ConversationData(conversations, many=True).data)
 
     @extend_schema(tags=['Диалоги'], request=ConversationData, responses={201: ConversationData})
     def post(self, request):
         serializer = ConversationData(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save(user=request.user)
+        profile, _ = Profile.objects.get_or_create(user=request.user)
+        serializer.save(user=request.user, language=profile.language)
         return Response(serializer.data, status=201)
 
 
@@ -136,6 +138,9 @@ class ConversationDetailView(APIView):
     def get(self, request, conversation_id):
         conversation = get_object_or_404(Conversation.objects.select_related('scenario'), id=conversation_id, user=request.user)
         return Response(ConversationData(conversation).data)
+
+
+TUTOR_LOCK = Lock()
 
 
 class MessagesView(APIView):
@@ -156,13 +161,38 @@ class MessagesView(APIView):
         serializer = MessageInput(data=request.data)
         serializer.is_valid(raise_exception=True)
         content = serializer.validated_data['content']
-        level = Profile.objects.filter(user=request.user).values_list('level', flat=True).first() or 'A1'
-        history = list(conversation.messages.order_by('-created_at', '-id')[:6])
+        request_id = serializer.validated_data.get('request_id')
+        # В демонстрационной версии работает один процесс Waitress.
+        # Lock исключает параллельные платные запросы с одинаковым UUID.
+        if not TUTOR_LOCK.acquire(timeout=1):
+            return Response({'detail': 'Ассистент занят. Повторите отправку немного позже.'}, status=409)
         try:
-            reply, corrections = tutor_reply(conversation.scenario, level, reversed(history), content)
-        except TutorError as exc:
-            return Response({'detail': str(exc)}, status=exc.status)
-        with transaction.atomic():
-            message = Message.objects.create(conversation=conversation, role='user', content=content)
-            answer = Message.objects.create(conversation=conversation, role='assistant', content=reply, feedback={'corrections': corrections})
-        return Response({'user_message': MessageData(message).data, 'assistant_message': MessageData(answer).data, 'feedback': corrections}, status=201)
+            if request_id:
+                previous = conversation.messages.filter(request_id=request_id, role='user').first()
+                if previous:
+                    if previous.content != content:
+                        return Response({'detail': 'request_id уже использован с другим текстом.'}, status=400)
+                    answer = previous.reply
+                    return Response({'user_message': MessageData(previous).data,
+                                     'assistant_message': MessageData(answer).data,
+                                     'feedback': answer.feedback.get('corrections', [])})
+            profile, _ = Profile.objects.get_or_create(user=request.user)
+            language = conversation.language
+            progress, _ = LanguageProgress.objects.get_or_create(
+                user=request.user, language=language,
+                defaults={'level': profile.level if profile.language == language else 'A1'},
+            )
+            level = profile.level if profile.language == language else progress.level
+            history = list(conversation.messages.order_by('-created_at', '-id')[:6])
+            try:
+                reply, corrections = tutor_reply(conversation.scenario, level, reversed(history), content, language=language)
+            except TutorError as exc:
+                return Response({'detail': str(exc)}, status=exc.status)
+            with transaction.atomic():
+                message = Message.objects.create(conversation=conversation, role='user', content=content, request_id=request_id)
+                answer = Message.objects.create(conversation=conversation, role='assistant', content=reply,
+                                                reply_to=message, feedback={'corrections': corrections})
+            return Response({'user_message': MessageData(message).data, 'assistant_message': MessageData(answer).data,
+                             'feedback': corrections}, status=201)
+        finally:
+            TUTOR_LOCK.release()

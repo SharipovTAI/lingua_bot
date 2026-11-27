@@ -1,0 +1,188 @@
+import { ApiError } from './types'
+import type { LookupResult, Note, Language } from './types'
+import type {
+  Attempt,
+  ChatMessage,
+  Conversation,
+  Exercise,
+  ExerciseKind,
+  MessageSendResult,
+  PlacementAnswer,
+  PlacementResult,
+  Profile,
+  ReviewCard,
+  Scenario,
+  Statistics,
+  User,
+  VocabularyWord,
+  WordReview,
+} from './types'
+
+const TOKEN_KEY = 'linguabot_token'
+const USER_KEY = 'linguabot_user'
+
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api/v1'
+
+/** Локальная копия контракта main. Включается через VITE_USE_MOCK, пути и типы ответов не меняются. */
+export const isLocalApi = false
+
+function readUser(): User | null {
+  const raw = localStorage.getItem(USER_KEY)
+  if (!raw) return null
+  try {
+    return JSON.parse(raw) as User
+  } catch {
+    return null
+  }
+}
+
+export function getStoredSession(): { token: string; user: User | null } {
+  return {
+    token: localStorage.getItem(TOKEN_KEY) ?? '',
+    user: readUser(),
+  }
+}
+
+export function storeSession(token: string, user: User) {
+  localStorage.setItem(TOKEN_KEY, token)
+  localStorage.setItem(USER_KEY, JSON.stringify(user))
+}
+
+export function clearSession() {
+  localStorage.removeItem(TOKEN_KEY)
+  localStorage.removeItem(USER_KEY)
+}
+
+function fieldMessage(details: unknown): string {
+  if (!details || typeof details !== 'object') {
+    return 'Не удалось выполнить запрос.'
+  }
+
+  const body = details as Record<string, unknown>
+  if (typeof body.detail === 'string') return body.detail
+
+  const lines = Object.entries(body).flatMap(([key, value]) => {
+    if (Array.isArray(value)) {
+      return value.map((item) =>
+        typeof item === 'string' ? item : `${key}: ${String(item)}`,
+      )
+    }
+    if (typeof value === 'string') return [value]
+    return []
+  })
+
+  return lines.join('\n') || 'Не удалось выполнить запрос.'
+}
+
+async function request<T>(
+  path: string,
+  method = 'GET',
+  data?: unknown,
+): Promise<T> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+  const token = localStorage.getItem(TOKEN_KEY)
+  if (token) headers.Authorization = `Token ${token}`
+
+  let response: Response
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      method,
+      headers,
+      ...(data === undefined ? {} : { body: JSON.stringify(data) }),
+    })
+  } catch {
+    throw new ApiError(
+      0,
+      null,
+      'Сервер недоступен. Проверьте подключение и повторите запрос.',
+    )
+  }
+
+  const text = await response.text()
+  let body: unknown = null
+  if (response.status !== 204 && text) {
+    try {
+      body = JSON.parse(text)
+    } catch {
+      body = { detail: text.slice(0, 180) }
+    }
+  }
+
+  if (!response.ok) {
+    throw new ApiError(response.status, body, fieldMessage(body))
+  }
+
+  return body as T
+}
+
+const liveApi = {
+  health: () => request<{ status: string }>('/health/'),
+  register: (email: string, password: string) =>
+    request<{ user: User }>('/auth/register/', 'POST', { email, password }),
+  login: (email: string, password: string) =>
+    request<{ token: string; user: User }>('/auth/login/', 'POST', {
+      email,
+      password,
+    }),
+  logout: () => request<null>('/auth/logout/', 'POST'),
+  profile: () => request<Profile>('/profile/'),
+  updateProfile: (data: Partial<Profile>) =>
+    request<Profile>('/profile/', 'PATCH', data),
+  scenarios: () => request<Scenario[]>('/scenarios/'),
+  conversations: () => request<Conversation[]>('/conversations/'),
+  createConversation: (scenarioId: number) =>
+    request<Conversation>('/conversations/', 'POST', {
+      scenario_id: scenarioId,
+    }),
+  history: (conversationId: number) =>
+    request<ChatMessage[]>(`/conversations/${conversationId}/messages/`),
+  send: (conversationId: number, content: string, requestId: string) =>
+    request<MessageSendResult>(
+      `/conversations/${conversationId}/messages/`,
+      'POST',
+      { content, request_id: requestId },
+    ),
+  placement: () => request<Exercise[]>('/placement/'),
+  submitPlacement: (requestId: string, answers: PlacementAnswer[]) =>
+    request<PlacementResult>('/placement/', 'POST', {
+      request_id: requestId,
+      answers,
+    }),
+  exercises: (kind?: ExerciseKind) =>
+    request<Exercise[]>(`/exercises/${kind ? `?kind=${kind}` : ''}`),
+  attempt: (exerciseId: number, answer: string, requestId: string) =>
+    request<Attempt>(`/exercises/${exerciseId}/attempts/`, 'POST', {
+      answer,
+      request_id: requestId,
+    }),
+  vocabulary: () => request<VocabularyWord[]>('/vocabulary/'),
+  addWord: (word: string, translation: string) =>
+    request<VocabularyWord>('/vocabulary/', 'POST', { word, translation }),
+  updateWord: (
+    wordId: number,
+    data: Partial<Pick<VocabularyWord, 'word' | 'translation'>>,
+  ) => request<VocabularyWord>(`/vocabulary/${wordId}/`, 'PATCH', data),
+  deleteWord: (wordId: number) =>
+    request<null>(`/vocabulary/${wordId}/`, 'DELETE'),
+  reviewCards: () => request<ReviewCard[]>('/vocabulary/review/'),
+  reviewWord: (wordId: number, answer: string, requestId: string) =>
+    request<WordReview>(`/vocabulary/${wordId}/reviews/`, 'POST', {
+      answer,
+      request_id: requestId,
+    }),
+  lookup: (word: string, target?: Language) =>
+    request<LookupResult>(
+      '/dictionary/lookup/?word=' +
+        encodeURIComponent(word) +
+        (target ? '&target=' + target : ''),
+    ),
+  notes: () => request<Note[]>('/notes/'),
+  addNote: (title: string, content: string) =>
+    request<Note>('/notes/', 'POST', { title, content }),
+  updateNote: (id: number, title: string, content: string) =>
+    request<Note>('/notes/' + id + '/', 'PATCH', { title, content }),
+  deleteNote: (id: number) => request<null>('/notes/' + id + '/', 'DELETE'),
+  statistics: () => request<Statistics>('/statistics/'),
+}
+
+export const api = liveApi

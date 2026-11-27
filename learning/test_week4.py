@@ -37,7 +37,7 @@ class Week4Tests(TestCase):
         }, format='json')
 
     def placement(self, correct=4, request_id=None):
-        questions = Exercise.objects.filter(is_placement=True).order_by('id')
+        questions = Exercise.objects.filter(is_placement=True, language='en').order_by('id')
         return self.client.post('/api/v1/placement/', {
             'request_id': request_id or str(uuid4()),
             'answers': [{'exercise_id': item.id, 'answer': item.answer if index < correct else 'wrong'}
@@ -55,8 +55,8 @@ class Week4Tests(TestCase):
     def test_seed_is_repeatable_and_keeps_attempts(self):
         self.attempt()
         call_command('seed_exercises', verbosity=0)
-        self.assertEqual(Exercise.objects.count(), 30)
-        self.assertEqual(Exercise.objects.filter(is_placement=True).count(), 10)
+        self.assertEqual(Exercise.objects.count(), 90)
+        self.assertEqual(Exercise.objects.filter(is_placement=True, language='en').count(), 10)
         self.assertEqual(Attempt.objects.count(), 1)
 
     def test_new_endpoints_require_authentication(self):
@@ -74,7 +74,7 @@ class Week4Tests(TestCase):
             for item in response.json():
                 self.assertNotIn('answer', item)
                 self.assertNotIn('explanation', item)
-                self.assertEqual(len(item['options']), 3)
+                self.assertIn(len(item['options']), [0, 3])
 
     def test_placement_sets_profile_and_is_idempotent(self):
         key = str(uuid4())
@@ -93,7 +93,7 @@ class Week4Tests(TestCase):
             self.assertEqual(result.json()['score'], score)
 
     def test_partial_duplicate_and_foreign_placement_questions_are_rejected(self):
-        question = Exercise.objects.filter(is_placement=True).first()
+        question = Exercise.objects.filter(is_placement=True, language='en').first()
         for answers in [
             [{'exercise_id': question.id, 'answer': 'x'}],
             [{'exercise_id': question.id, 'answer': 'x'}] * 10,
@@ -133,7 +133,7 @@ class Week4Tests(TestCase):
         for data in [{}, {'answer': '', 'request_id': str(uuid4())}, {'answer': 'x', 'request_id': 'bad'}]:
             response = self.client.post(f'/api/v1/exercises/{self.exercise.id}/attempts/', data, format='json')
             self.assertEqual(response.status_code, 400)
-        self.assertEqual(self.attempt(Exercise.objects.filter(is_placement=True).first()).status_code, 404)
+        self.assertEqual(self.attempt(Exercise.objects.filter(is_placement=True, language='en').first()).status_code, 404)
         self.assertEqual(Attempt.objects.count(), 0)
 
     def test_errors_prioritize_related_topic_and_mastery_removes_priority(self):

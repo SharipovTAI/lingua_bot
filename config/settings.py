@@ -18,6 +18,7 @@ INSTALLED_APPS = [
 ]
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -37,7 +38,7 @@ TEMPLATES = [{
     ]},
 }]
 WSGI_APPLICATION = 'config.wsgi.application'
-DATABASES = {'default': {'ENGINE': 'django.db.backends.sqlite3', 'NAME': BASE_DIR / 'db.sqlite3'}}
+DATABASES = {'default': {'ENGINE': 'django.db.backends.sqlite3', 'NAME': BASE_DIR / 'db.sqlite3', 'OPTIONS': {'timeout': 20}}}
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
@@ -55,10 +56,19 @@ REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_PERMISSION_CLASSES': ['rest_framework.permissions.IsAuthenticated'],
     'DEFAULT_AUTHENTICATION_CLASSES': ['rest_framework.authentication.TokenAuthentication'],
-    'DEFAULT_THROTTLE_RATES': {'auth': '20/min', 'tutor': '10/min'},
+    'DEFAULT_THROTTLE_RATES': {'auth': '20/min', 'tutor': '10/min', 'dictionary': '20/min'},
 }
 SPECTACULAR_SETTINGS = {
-    'TITLE': 'LinguaBot Backend — неделя 4', 'VERSION': '0.4.0',
+    'TITLE': 'LinguaBot Backend — неделя 5', 'VERSION': '0.5.0',
     'DESCRIPTION': 'Авторизация, диалоги с ИИ, входной тест, упражнения, словарь и прогресс.',
     'SERVE_INCLUDE_SCHEMA': False,
+}
+
+FRONTEND_DIST = BASE_DIR / 'frontend' / 'dist'
+STATIC_ROOT = BASE_DIR / '.runtime' / 'static'
+STATIC_URL = '/static/'
+STATICFILES_DIRS = [('web', FRONTEND_DIST)] if FRONTEND_DIST.exists() else []
+STORAGES = {
+    'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+    'staticfiles': {'BACKEND': 'whitenoise.storage.CompressedStaticFilesStorage'},
 }

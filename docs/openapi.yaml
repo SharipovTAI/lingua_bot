@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
-  title: LinguaBot Backend — неделя 4
-  version: 0.4.0
+  title: LinguaBot Backend — неделя 5
+  version: 0.5.0
   description: Авторизация, диалоги с ИИ, входной тест, упражнения, словарь и прогресс.
 paths:
   /api/v1/auth/login/:
@@ -195,6 +195,34 @@ paths:
           description: ИИ недоступен
         '504':
           description: Истекло время ожидания ИИ
+  /api/v1/dictionary/lookup/:
+    get:
+      operationId: v1_dictionary_lookup_retrieve
+      parameters:
+      - in: query
+        name: target
+        schema:
+          type: string
+          enum:
+          - de
+          - en
+          - ru
+      - in: query
+        name: word
+        schema:
+          type: string
+        required: true
+      tags:
+      - Внешний словарь
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LookupData'
+          description: ''
   /api/v1/exercises/:
     get:
       operationId: v1_exercises_list
@@ -269,6 +297,143 @@ paths:
           description: Сервер и база отвечают
         '503':
           description: База недоступна
+  /api/v1/notes/:
+    get:
+      operationId: v1_notes_list
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/NoteData'
+          description: ''
+    post:
+      operationId: v1_notes_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NoteData'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/NoteData'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/NoteData'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NoteData'
+          description: ''
+  /api/v1/notes/{id}/:
+    get:
+      operationId: v1_notes_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NoteData'
+          description: ''
+    put:
+      operationId: v1_notes_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NoteData'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/NoteData'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/NoteData'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NoteData'
+          description: ''
+    patch:
+      operationId: v1_notes_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedNoteData'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedNoteData'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedNoteData'
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NoteData'
+          description: ''
+    delete:
+      operationId: v1_notes_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/v1/placement/:
     get:
       operationId: v1_placement_list
@@ -580,6 +745,10 @@ components:
         scenario_title:
           type: string
           readOnly: true
+        language:
+          allOf:
+          - $ref: '#/components/schemas/LanguageEnum'
+          readOnly: true
         created_at:
           type: string
           format: date-time
@@ -587,11 +756,14 @@ components:
       required:
       - created_at
       - id
+      - language
       - scenario_id
       - scenario_title
     CorrectionData:
       type: object
       properties:
+        topic:
+          type: string
         original:
           type: string
         corrected:
@@ -621,6 +793,8 @@ components:
         question:
           type: string
         options: {}
+        language:
+          $ref: '#/components/schemas/LanguageEnum'
       required:
       - id
       - kind
@@ -638,8 +812,13 @@ components:
     LanguageEnum:
       enum:
       - en
+      - de
+      - ru
       type: string
-      description: '* `en` - en'
+      description: |-
+        * `en` - Английский
+        * `de` - Немецкий
+        * `ru` - Русский
     LevelEnum:
       enum:
       - A1
@@ -678,6 +857,43 @@ components:
       required:
       - token
       - user
+    LookupData:
+      type: object
+      properties:
+        word:
+          type: string
+        language:
+          type: string
+        target:
+          type: string
+        translation:
+          type: string
+        definitions:
+          type: array
+          items:
+            type: string
+        examples:
+          type: array
+          items:
+            type: string
+        source:
+          type: string
+        source_url:
+          type: string
+          format: uri
+        translation_url:
+          type: string
+          format: uri
+      required:
+      - definitions
+      - examples
+      - language
+      - source
+      - source_url
+      - target
+      - translation
+      - translation_url
+      - word
     MessageData:
       type: object
       properties:
@@ -706,6 +922,9 @@ components:
     MessageInput:
       type: object
       properties:
+        request_id:
+          type: string
+          format: uuid
         content:
           type: string
           maxLength: 2000
@@ -726,6 +945,52 @@ components:
       - assistant_message
       - feedback
       - user_message
+    NoteData:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 120
+        content:
+          type: string
+          maxLength: 5000
+        language:
+          allOf:
+          - $ref: '#/components/schemas/LanguageEnum'
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - content
+      - id
+      - language
+      - title
+      - updated_at
+    PatchedNoteData:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 120
+        content:
+          type: string
+          maxLength: 5000
+        language:
+          allOf:
+          - $ref: '#/components/schemas/LanguageEnum'
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
     PatchedProfileData:
       type: object
       properties:
@@ -778,11 +1043,17 @@ components:
           format: int64
         level:
           $ref: '#/components/schemas/LevelEnum'
+        language:
+          $ref: '#/components/schemas/LanguageEnum'
+        band:
+          type: string
+          readOnly: true
         created_at:
           type: string
           format: date-time
           readOnly: true
       required:
+      - band
       - created_at
       - id
       - level
@@ -940,6 +1211,32 @@ components:
     StatisticsData:
       type: object
       properties:
+        language:
+          type: string
+        activity:
+          type: object
+          additionalProperties: {}
+        daily_tasks:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        achievements:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        xp_today:
+          type: integer
+        learning_plan:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        focus_topics:
+          type: array
+          items:
+            type: string
         level:
           type: string
         attempts:
@@ -972,18 +1269,25 @@ components:
           nullable: true
       required:
       - accuracy
+      - achievements
+      - activity
       - attempts
       - by_kind
       - completed_exercises
       - conversations
       - correct
       - correct_reviews
+      - daily_tasks
+      - focus_topics
+      - language
+      - learning_plan
       - level
       - placement
       - user_messages
       - vocabulary_words
       - word_reviews
       - words_due
+      - xp_today
     UserData:
       type: object
       properties:
@@ -1018,6 +1322,8 @@ components:
           maximum: 9223372036854775807
           minimum: 0
           format: int64
+        language:
+          $ref: '#/components/schemas/LanguageEnum'
       required:
       - id
       - translation

@@ -100,7 +100,7 @@ class WeekTwoTests(TestCase):
 
     def test_invalid_profile_update_does_not_change_database(self):
         self.as_user()
-        for data in [{'level': 'C9'}, {'language': 'de'}, {'goal': 'x'*201}]:
+        for data in [{'level': 'C9'}, {'language': 'fr'}, {'goal': 'x'*201}]:
             self.assertEqual(self.client.patch('/api/v1/profile/', data, format='json').status_code, 400)
         self.alice.profile.refresh_from_db()
         self.assertEqual(self.alice.profile.level, 'A1')
